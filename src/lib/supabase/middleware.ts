@@ -32,6 +32,15 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // Skip static assets and Next.js internals — never redirect these
+  if (
+    path.startsWith("/_next/") ||
+    path.startsWith("/api/") ||
+    path.includes(".") // files with extensions (favicon.ico, images, etc.)
+  ) {
+    return supabaseResponse;
+  }
+
   // Public routes — everything else is protected
   const publicPaths = ["/", "/login", "/signup", "/auth/callback"];
   const isPublic = publicPaths.includes(path);

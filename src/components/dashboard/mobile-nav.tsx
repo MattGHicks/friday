@@ -23,7 +23,7 @@ export function MobileNav({
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-secondary px-4 md:hidden">
+    <header className="flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-4 md:hidden">
       <span className="font-heading text-lg font-bold tracking-tight text-golden">
         friday
       </span>
@@ -34,8 +34,8 @@ export function MobileNav({
         >
           <Menu className="h-5 w-5" strokeWidth={1.5} />
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 bg-secondary p-0">
-          <SheetHeader className="flex h-14 items-center border-b border-border px-4">
+        <SheetContent side="left" className="w-64 bg-sidebar p-0">
+          <SheetHeader className="flex h-14 items-center border-b border-sidebar-border px-4">
             <SheetTitle className="font-heading text-lg font-bold tracking-tight text-golden">
               friday
             </SheetTitle>

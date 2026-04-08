@@ -19,7 +19,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden flex-col border-r border-border bg-secondary md:flex",
+        "hidden flex-col border-r border-sidebar-border bg-sidebar md:flex",
         "transition-[width] duration-200 ease-out",
         collapsed ? "w-16" : "w-64"
       )}
@@ -27,7 +27,7 @@ export function Sidebar({
       {/* Wordmark */}
       <div
         className={cn(
-          "flex h-14 items-center border-b border-border px-4",
+          "flex h-14 items-center border-b border-sidebar-border px-4",
           collapsed && "justify-center px-0"
         )}
       >
