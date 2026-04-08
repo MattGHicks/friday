@@ -26,7 +26,26 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh the session — important for Server Components
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+
+  // Protected routes: redirect to login if not authenticated
+  if (path.startsWith("/dashboard") && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", path);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Auth routes: redirect to dashboard if already authenticated
+  if ((path === "/login" || path === "/signup") && user) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/dashboard";
+    return NextResponse.redirect(dashboardUrl);
+  }
 
   return supabaseResponse;
 }

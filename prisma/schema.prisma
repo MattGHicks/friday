@@ -10,7 +10,7 @@ datasource db {
 // ── Freelancers (primary users) ──────────────────────────────
 
 model User {
-  id              String   @id @default(cuid())
+  id              String   @id @default(uuid())
   email           String   @unique
   name            String?
   avatarUrl       String?
