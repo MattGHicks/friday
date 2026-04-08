@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { logout } from "@/app/(auth)/actions";
-import { Button } from "@/components/ui/button";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { MobileNav } from "@/components/dashboard/mobile-nav";
 
 export default async function DashboardLayout({
   children,
@@ -12,25 +12,20 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-          <span className="font-heading text-lg font-bold tracking-tight">
-            friday
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-            <form action={logout}>
-              <Button variant="ghost" size="sm" type="submit">
-                Sign out
-              </Button>
-            </form>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
-        {children}
-      </main>
+    <div className="flex min-h-full flex-1">
+      {/* Desktop sidebar */}
+      <Sidebar name={user.name} email={user.email} />
+
+      {/* Main content area */}
+      <div className="flex flex-1 flex-col">
+        {/* Mobile top bar */}
+        <MobileNav name={user.name} email={user.email} />
+
+        {/* Page content */}
+        <main className="flex-1 px-6 py-8 md:px-10">
+          <div className="mx-auto max-w-5xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

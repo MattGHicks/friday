@@ -32,8 +32,21 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // Skip static assets and Next.js internals — never redirect these
+  if (
+    path.startsWith("/_next/") ||
+    path.startsWith("/api/") ||
+    path.includes(".") // files with extensions (favicon.ico, images, etc.)
+  ) {
+    return supabaseResponse;
+  }
+
+  // Public routes — everything else is protected
+  const publicPaths = ["/", "/login", "/signup", "/auth/callback"];
+  const isPublic = publicPaths.includes(path) || path.startsWith("/portal");
+
   // Protected routes: redirect to login if not authenticated
-  if (path.startsWith("/dashboard") && !user) {
+  if (!isPublic && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", path);
