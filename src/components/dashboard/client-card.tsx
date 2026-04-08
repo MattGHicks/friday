@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,11 +37,11 @@ function getInitials(name: string): string {
 
 // Warm avatar background colors that match the brand
 const avatarColors = [
-  "bg-golden/15 text-golden",
-  "bg-sunset/15 text-sunset",
-  "bg-sage/15 text-sage",
-  "bg-[#8B7EC8]/15 text-[#8B7EC8]",
-  "bg-[#5B9BD5]/15 text-[#5B9BD5]",
+  "bg-golden/20 text-golden",
+  "bg-sunset/20 text-sunset",
+  "bg-sage/20 text-sage",
+  "bg-[#C08B5C]/20 text-[#C08B5C]",
+  "bg-[#9C8B7A]/25 text-[#C5BCAC]",
 ];
 
 function getAvatarColor(name: string): string {
@@ -72,11 +73,12 @@ export function ClientCard({
 
   return (
     <>
-      <Card className="group border-border/60 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <Card className="group border-border/40 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+            {/* Clickable area → client detail */}
+            <Link href={`/clients/${client.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+              <Avatar className="h-10 w-10 shrink-0">
                 <AvatarFallback
                   className={`text-sm font-semibold ${getAvatarColor(client.name)}`}
                 >
@@ -93,11 +95,11 @@ export function ClientCard({
                   </p>
                 )}
               </div>
-            </div>
+            </Link>
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all duration-200 hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                className="ml-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all duration-200 hover:bg-accent hover:text-foreground group-hover:opacity-100"
               >
                 <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
               </DropdownMenuTrigger>
@@ -118,14 +120,14 @@ export function ClientCard({
             </DropdownMenu>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
+          <Link href={`/clients/${client.id}`} className="mt-4 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">{client.email}</p>
             {projectCount > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {projectCount} project{projectCount !== 1 ? "s" : ""}
               </Badge>
             )}
-          </div>
+          </Link>
 
           <p className="mt-2 text-[11px] text-muted-foreground/60">
             Added{" "}

@@ -34,7 +34,7 @@ const navItems = [
     label: "Projects",
     href: "/projects",
     icon: FolderKanban,
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Invoices",
