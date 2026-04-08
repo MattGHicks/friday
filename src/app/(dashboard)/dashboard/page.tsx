@@ -96,7 +96,7 @@ export default async function DashboardPage() {
               projects, share files, and send invoices from here.
             </p>
             <Link
-              href="/dashboard/clients"
+              href="/clients"
               className={buttonVariants({ className: "mt-6" })}
             >
               Get started

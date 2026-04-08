@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// Route group (dashboard) is invisible in URL — paths are at root level
 const navItems = [
   {
     label: "Dashboard",
@@ -25,25 +26,25 @@ const navItems = [
   },
   {
     label: "Clients",
-    href: "/dashboard/clients",
+    href: "/clients",
     icon: Users,
     enabled: true,
   },
   {
     label: "Projects",
-    href: "/dashboard/projects",
+    href: "/projects",
     icon: FolderKanban,
     enabled: false,
   },
   {
     label: "Invoices",
-    href: "/dashboard/invoices",
+    href: "/invoices",
     icon: FileText,
     enabled: false,
   },
   {
     label: "Files",
-    href: "/dashboard/files",
+    href: "/files",
     icon: Upload,
     enabled: false,
   },

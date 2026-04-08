@@ -54,7 +54,7 @@ export async function createClient(
     return { error: "Something went wrong. Please try again." };
   }
 
-  revalidatePath("/dashboard/clients");
+  revalidatePath("/clients");
   return { success: true };
 }
 
@@ -101,7 +101,7 @@ export async function updateClient(
     return { error: "Something went wrong. Please try again." };
   }
 
-  revalidatePath("/dashboard/clients");
+  revalidatePath("/clients");
   return { success: true };
 }
 
@@ -119,6 +119,6 @@ export async function deleteClient(clientId: string) {
     where: { id: clientId },
   });
 
-  revalidatePath("/dashboard/clients");
+  revalidatePath("/clients");
   return { success: true };
 }

@@ -32,8 +32,12 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // Public routes — everything else is protected
+  const publicPaths = ["/", "/login", "/signup", "/auth/callback"];
+  const isPublic = publicPaths.includes(path);
+
   // Protected routes: redirect to login if not authenticated
-  if (path.startsWith("/dashboard") && !user) {
+  if (!isPublic && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", path);
