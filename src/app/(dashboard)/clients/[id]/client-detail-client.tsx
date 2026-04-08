@@ -91,18 +91,16 @@ function ProjectCard({
       <Card className="group border-border/40 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-heading text-sm font-semibold text-foreground truncate">
-                  {project.name}
-                </h3>
-              </div>
+            <Link href={`/projects/${project.id}`} className="min-w-0 flex-1">
+              <h3 className="font-heading text-sm font-semibold text-foreground truncate hover:text-golden transition-colors duration-150">
+                {project.name}
+              </h3>
               {project.description && (
                 <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                   {project.description}
                 </p>
               )}
-            </div>
+            </Link>
 
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 transition-all duration-200 hover:bg-accent hover:text-foreground group-hover:opacity-100">

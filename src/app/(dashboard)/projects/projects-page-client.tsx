@@ -82,12 +82,15 @@ function ProjectRow({
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <h3 className="font-heading text-sm font-semibold text-foreground">
+              <Link
+                href={`/projects/${project.id}`}
+                className="font-heading text-sm font-semibold text-foreground transition-colors hover:text-golden"
+              >
                 {project.name}
-              </h3>
+              </Link>
               <Link
                 href={`/clients/${project.client.id}`}
-                className="mt-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="mt-0.5 block text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 {project.client.name}
               </Link>
