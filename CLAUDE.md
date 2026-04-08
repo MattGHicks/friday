@@ -214,7 +214,7 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 ## Important Notes
 - **Next.js 16:** Uses `proxy.ts` instead of `middleware.ts` (renamed convention). The exported function must be named `proxy`, not `middleware`.
 - **Prisma 7:** Requires an adapter (`@prisma/adapter-pg`). Cannot instantiate `new PrismaClient()` without passing `{ adapter }`. The generated client lives in `src/generated/prisma/` (gitignored) — import from `@/generated/prisma/client`, not `@/generated/prisma`.
-- **Prisma generate:** Must run `npx prisma generate` after cloning or after schema changes, before the build will pass.
+- **Prisma generate:** Must run `npx prisma generate` after cloning or after schema changes, before the build will pass. On Vercel, the build script is `prisma generate && next build` — the generated client is gitignored and must be generated at build time.
 - **Prisma connections:** `DATABASE_URL` = transaction pooler (port 6543, pgbouncer, for runtime). `DIRECT_URL` = session pooler (port 5432, for migrations/DDL). Host is `aws-1-us-east-1` (not `aws-0`).
 - **Prisma schema errors:** `.error.issues[0].message` (not `.errors`) for zod validation messages.
 - **Middleware static assets:** Must skip `/_next/`, `/api/`, and paths with `.` (file extensions) early — otherwise CSS/JS/images get redirected to /login and the page renders completely unstyled.
