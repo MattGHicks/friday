@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { OAuthButtons } from "../oauth-buttons";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -67,14 +68,17 @@ export default function SignupPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <SubmitButton />
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
         </CardFooter>
       </form>
+      <div className="px-6 pb-6 space-y-4">
+        <OAuthButtons />
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
     </Card>
   );
 }
