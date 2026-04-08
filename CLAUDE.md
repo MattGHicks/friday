@@ -85,6 +85,25 @@ docs/
 - Lowercase energy in casual contexts, proper in formal (invoices, contracts)
 - See docs/friday-brand-bible.md for full guidelines
 
+## Installed Skills
+Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` (Claude Code). Installed via `npx skills add`. To find more: `npx skills find <keyword>`.
+
+| Skill | Source | Purpose |
+|-------|--------|---------|
+| **find-skills** | vercel-labs/skills | Discover and install new skills on the fly |
+| **frontend-design** | anthropics/skills | Distinctive, production-grade UI — avoids generic AI aesthetics. Establishes aesthetic direction before coding. |
+| **web-design-guidelines** | vercel-labs/agent-skills | Audits UI code against Vercel's Web Interface Guidelines for design + a11y compliance |
+| **supabase-postgres-best-practices** | supabase/agent-skills | Postgres optimization: indexing, RLS, connection pooling, schema design |
+| **nextjs-supabase-auth** | sickn33/antigravity-awesome-skills | Auth patterns for Next.js App Router + Supabase SSR (@supabase/ssr) |
+| **vercel-react-best-practices** | vercel-labs/agent-skills | React component quality: hooks, accessibility, performance, TypeScript patterns |
+
+**When to use each:**
+- Starting a new UI page/component → `frontend-design` first for aesthetic direction, then `web-design-guidelines` to audit
+- Writing database queries or schema changes → `supabase-postgres-best-practices`
+- Building auth flows → `nextjs-supabase-auth`
+- After editing React components → `vercel-react-best-practices` for quality review
+- Need a new capability → `find-skills` to search the ecosystem
+
 ## What's Done
 - [x] GitHub repo created (private)
 - [x] Next.js 16 scaffold with TypeScript, Tailwind v4, Turbopack
@@ -96,6 +115,7 @@ docs/
 - [x] Fonts configured (Plus Jakarta Sans, Inter, JetBrains Mono via next/font)
 - [x] Route group directories created: (auth), (dashboard), (portal), api
 - [x] Build passing
+- [x] Agent skills installed (6 skills: find-skills, frontend-design, web-design-guidelines, supabase-postgres-best-practices, nextjs-supabase-auth, vercel-react-best-practices)
 
 ## What's Next
 - [ ] Create Supabase project + add credentials to `.env.local`
