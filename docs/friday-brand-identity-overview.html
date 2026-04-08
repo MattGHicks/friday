@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friday — Brand Identity Overview</title>
+<style>
+:root {
+  --midnight: #1A1A2E;
+  --warm-white: #FAFAF7;
+  --sand: #F0EBE3;
+  --golden: #E8A838;
+  --sunset: #D4724E;
+  --sage: #7C9082;
+  --slate: #6B7280;
+  --coral: #E85D5D;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f3;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border: #e5e5e5;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #252525;
+    --text-primary: #e5e5e5;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    --border: #333;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.section { margin: 0 0 2.5rem; }
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+.logo-area {
+  background: #1A1A2E;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  text-align: center;
+  margin: 0 0 8px;
+}
+.logo-text {
+  font-size: 42px;
+  font-weight: 600;
+  color: #FAFAF7;
+  letter-spacing: -0.04em;
+}
+.logo-dot { color: #E8A838; }
+.logo-sub {
+  font-size: 13px;
+  color: #E8A838;
+  margin: 8px 0 0;
+  letter-spacing: 0.15em;
+  font-weight: 400;
+}
+.logo-light {
+  background: #FAFAF7;
+  border: 0.5px solid var(--border);
+}
+.logo-light .logo-text { color: #1A1A2E; }
+.logo-light .logo-sub { color: #D4724E; }
+.logo-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 1rem;
+}
+
+.colors { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 1rem; }
+.swatch {
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex: 1;
+  min-width: 70px;
+}
+.swatch-fill { height: 56px; }
+.swatch-info { padding: 8px; background: var(--bg-secondary); }
+.swatch-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.swatch-hex { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); }
+
+.tagline-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin: 0 0 8px;
+}
+.tagline-primary {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.tagline-ctx {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.persona-bar { display: flex; gap: 8px; margin: 0 0 1rem; flex-wrap: wrap; }
+.trait {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.voice-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+.voice-do { font-size: 12px; color: var(--text-primary); margin: 0 0 4px; font-weight: 500; }
+.voice-ex { font-size: 12px; color: var(--text-secondary); font-style: italic; line-height: 1.4; }
+
+.audience-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.audience-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.audience-pct { font-size: 22px; font-weight: 500; color: var(--text-primary); }
+.audience-who { font-size: 12px; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.4; }
+
+@media (max-width: 600px) {
+  .logo-row { grid-template-columns: 1fr; }
+  .voice-grid { grid-template-columns: 1fr; }
+  .audience-grid { grid-template-columns: 1fr; }
+  .colors { flex-wrap: wrap; }
+  .swatch { min-width: 45%; }
+}
+</style>
+</head>
+<body>
+
+<div class="section">
+<div class="section-label">Wordmark</div>
+<div class="logo-row">
+<div class="logo-area">
+<div class="logo-text">friday<span class="logo-dot">.</span></div>
+<div class="logo-sub">IT'S FRIDAY. EVERY DAY.</div>
+</div>
+<div class="logo-area logo-light">
+<div class="logo-text">friday<span class="logo-dot">.</span></div>
+<div class="logo-sub">IT'S FRIDAY. EVERY DAY.</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-label">Color palette</div>
+<div class="colors">
+<div class="swatch">
+<div class="swatch-fill" style="background:#1A1A2E"></div>
+<div class="swatch-info"><div class="swatch-name">Midnight</div><div class="swatch-hex">#1A1A2E</div></div>
+</div>
+<div class="swatch">
+<div class="swatch-fill" style="background:#FAFAF7"></div>
+<div class="swatch-info"><div class="swatch-name">Warm White</div><div class="swatch-hex">#FAFAF7</div></div>
+</div>
+<div class="swatch">
+<div class="swatch-fill" style="background:#F0EBE3"></div>
+<div class="swatch-info"><div class="swatch-name">Sand</div><div class="swatch-hex">#F0EBE3</div></div>
+</div>
+<div class="swatch">
+<div class="swatch-fill" style="background:#E8A838"></div>
+<div class="swatch-info"><div class="swatch-name">Golden</div><div class="swatch-hex">#E8A838</div></div>
+</div>
+<div class="swatch">
+<div class="swatch-fill" style="background:#D4724E"></div>
+<div class="swatch-info"><div class="swatch-name">Sunset</div><div class="swatch-hex">#D4724E</div></div>
+</div>
+<div class="swatch">
+<div class="swatch-fill" style="background:#7C9082"></div>
+<div class="swatch-info"><div class="swatch-name">Sage</div><div class="swatch-hex">#7C9082</div></div>
+</div>
+<div class="swatch">
+<div class="swatch-fill" style="background:#E85D5D"></div>
+<div class="swatch-info"><div class="swatch-name">Coral</div><div class="swatch-hex">#E85D5D</div></div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-label">Tagline system</div>
+<div class="tagline-card">
+<div class="tagline-ctx">Primary</div>
+<div class="tagline-primary">It's Friday. Every day.</div>
+</div>
+<div class="tagline-card">
+<div class="tagline-ctx">Landing page hero</div>
+<div class="tagline-primary">Your clients deserve better than a Google Drive link.</div>
+</div>
+<div class="tagline-card">
+<div class="tagline-ctx">Product Hunt launch</div>
+<div class="tagline-primary">Monday is for the 9-to-5. Friday is for the rest of us.</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-label">Brand personality</div>
+<div class="persona-bar">
+<div class="trait">Confident, not arrogant</div>
+<div class="trait">Warm, not fluffy</div>
+<div class="trait">Minimal, not cold</div>
+<div class="trait">Opinionated, not preachy</div>
+<div class="trait">Independent, not isolated</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-label">Voice examples</div>
+<div class="voice-grid">
+<div class="voice-card">
+<div class="voice-do">We say</div>
+<div class="voice-ex">"Your client portal is live. Took 4 minutes."</div>
+</div>
+<div class="voice-card">
+<div class="voice-do">We don't say</div>
+<div class="voice-ex">"We're thrilled to announce your portal has been successfully deployed!"</div>
+</div>
+<div class="voice-card">
+<div class="voice-do">We say</div>
+<div class="voice-ex">"Pin feedback right on the mockup. No more email threads."</div>
+</div>
+<div class="voice-card">
+<div class="voice-do">We don't say</div>
+<div class="voice-ex">"Leverage our robust annotation solution to streamline feedback."</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-label">Target audience</div>
+<div class="audience-grid">
+<div class="audience-card">
+<div class="audience-pct">70%</div>
+<div class="audience-who">Solo freelance designers who need to look as professional as a studio</div>
+</div>
+<div class="audience-card">
+<div class="audience-pct">20%</div>
+<div class="audience-who">Dev-designer hybrids who are too technical for HoneyBook, too creative for Jira</div>
+</div>
+<div class="audience-card">
+<div class="audience-pct">10%</div>
+<div class="audience-who">Small studios (2-4 people) growing beyond solo tools</div>
+</div>
+</div>
+</div>
+
+</body>
+</html>
