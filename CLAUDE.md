@@ -3,9 +3,10 @@
 > A branded client portal for freelance designers — design review, invoicing, and file delivery in one calm space.
 
 ## Status
-- **Stage:** building — scaffold complete, no Supabase/Vercel linked yet
-- **Deployed:** no (Vercel not linked yet)
-- **Auto-deploy:** will be yes → push to `main` deploys to Vercel (once linked)
+- **Stage:** building — auth system complete, starting dashboard + client CRUD
+- **Deployed:** yes → Vercel (auto-deploys from `main`)
+- **Auto-deploy:** yes → push to `main` deploys to Vercel
+- **Supabase:** connected (project ref: izfblnrrxlvzuvxeexod, MCP configured)
 
 ## What This Is
 Friday replaces the messy stack of Notion + Google Drive + email threads + HoneyBook with a single, beautiful client portal. Freelance designers get a branded space where clients can check project status, review designs with pin-drop comments, download deliverables, and pay invoices. Key differentiator: visual design review with image annotation.
@@ -26,37 +27,61 @@ Friday replaces the messy stack of Notion + Google Drive + email threads + Honey
 ## Local Dev
 ```bash
 npm install
-npm run dev       # http://localhost:3000
+npx prisma generate   # required after clone or schema changes
+npm run dev            # http://localhost:3000
 ```
 
 Environment variables needed: copy `.env.example` → `.env.local`
 For Vercel-synced vars: `vercel env pull`
 
+## Development Workflow
+
+> **Work locally, test thoroughly, push only when ready.**
+>
+> Every push to `main` triggers a Vercel build (costs money). Minimize unnecessary deploys.
+>
+> 1. **Create a feature branch** for any non-trivial work: `git checkout -b feature/feature-name`
+> 2. **Develop and test locally** with `npm run dev` — verify everything works
+> 3. **Run `npx next build`** to catch type errors before pushing
+> 4. **Merge to `main`** only when the feature is complete and tested
+> 5. Push triggers auto-deploy to Vercel
+>
+> **Branch naming:** `feature/description`, `fix/description`
+> **Commits to `main`:** should be merge commits from tested feature branches
+
 ## Project Structure
 ```
 src/
   app/                # Next.js App Router pages
-    (auth)/           # Auth routes (login, signup, magic link) — empty, not built yet
-    (dashboard)/      # Freelancer dashboard (requires auth) — empty, not built yet
-    (portal)/         # Client-facing portal (subdomain-routed) — empty, not built yet
-    api/              # API routes (webhooks, Stripe, etc.) — empty, not built yet
+    (auth)/           # Auth routes — login, signup (working)
+      actions.ts      # Server actions: signup, login, logout
+      layout.tsx      # Centered auth layout with Friday wordmark
+      login/page.tsx  # Login form (email/password)
+      signup/page.tsx # Signup form (email/password)
+    (dashboard)/      # Freelancer dashboard (protected, requires auth)
+      layout.tsx      # Dashboard shell: top-nav with user email + sign out
+      dashboard/page.tsx  # Dashboard home (placeholder)
+    (portal)/         # Client-facing portal (subdomain-routed) — not built yet
+    api/              # API routes (webhooks, Stripe, etc.) — not built yet
+    auth/callback/route.ts  # Supabase OAuth callback handler
     layout.tsx        # Root layout with fonts + metadata
     page.tsx          # Placeholder landing page
     globals.css       # Tailwind v4 theme with Friday brand colors
   components/
-    ui/button.tsx     # shadcn/ui Button (only component installed so far)
+    ui/               # shadcn/ui: button, input, label, card, separator
   generated/prisma/   # Auto-generated Prisma client (gitignored, run `npx prisma generate`)
   lib/
+    auth.ts           # getCurrentUser() — upserts Prisma User from Supabase auth
     prisma.ts         # Singleton Prisma client with PrismaPg adapter
     utils.ts          # shadcn/ui cn() utility
     supabase/
       client.ts       # Browser Supabase client
       server.ts       # Server Component Supabase client
-      middleware.ts    # Session refresh helper (called from proxy.ts)
-  proxy.ts            # Next.js 16 proxy (replaces middleware.ts) — refreshes Supabase sessions
+      middleware.ts    # Session refresh + route protection (called from proxy.ts)
+  proxy.ts            # Next.js 16 proxy — refreshes sessions, protects routes
 prisma/
   schema.prisma       # Full MVP database schema (13 models, all enums)
-prisma.config.ts      # Prisma config (reads DATABASE_URL from env)
+prisma.config.ts      # Prisma config (loads .env.local, uses DIRECT_URL for migrations)
 docs/
   friday-mvp-spec.md  # Full product spec with 8-week build plan
   friday-brand-bible.md  # Brand voice, colors, typography, positioning
@@ -107,31 +132,38 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 ## What's Done
 - [x] GitHub repo created (private)
 - [x] Next.js 16 scaffold with TypeScript, Tailwind v4, Turbopack
-- [x] shadcn/ui initialized
+- [x] shadcn/ui initialized (button, input, label, card, separator)
 - [x] All dependencies installed (Prisma, Supabase, Stripe, Resend, dnd-kit, zod, react-hook-form, lucide-react, date-fns)
-- [x] Full Prisma schema written (13 models: User, Client, Project, Column, Card, File, Review, Annotation, Invoice, Contract, Message, Activity, Notification)
-- [x] Supabase client utilities (server, browser, middleware/proxy)
+- [x] Full Prisma schema written (13 models) and pushed to Supabase
+- [x] Supabase project connected (MCP configured for direct management)
+- [x] Vercel linked (auto-deploys from `main` via GitHub)
 - [x] Brand theme applied in globals.css (Friday palette, dark mode support)
 - [x] Fonts configured (Plus Jakarta Sans, Inter, JetBrains Mono via next/font)
-- [x] Route group directories created: (auth), (dashboard), (portal), api
-- [x] Build passing
-- [x] Agent skills installed (6 skills: find-skills, frontend-design, web-design-guidelines, supabase-postgres-best-practices, nextjs-supabase-auth, vercel-react-best-practices)
+- [x] Agent skills installed (6 skills)
+- [x] **Auth system complete:** signup, login, logout (email/password)
+- [x] **Route protection:** middleware redirects unauthenticated → /login, authenticated → /dashboard
+- [x] **User sync:** Prisma User upserted from Supabase auth UUID on each dashboard request
+- [x] **Dashboard shell:** top-nav with user email + sign out (no sidebar yet)
+- [x] Build passing, auth flow tested end-to-end
 
 ## What's Next
-- [ ] Create Supabase project + add credentials to `.env.local`
-- [ ] `vercel link` to connect project to Vercel
-- [ ] `npx prisma migrate dev` to apply schema to database
-- [ ] Auth system: freelancer signup/login (Supabase Auth)
-- [ ] Dashboard shell: sidebar nav, layout, responsive scaffold
-- [ ] Client CRUD: create/list/edit clients
+- [ ] Dashboard sidebar nav + responsive layout
+- [ ] Client CRUD: create/list/edit/delete clients
+- [ ] Project management: create projects per client
+- [ ] Kanban board: drag-and-drop columns and cards (dnd-kit)
+- [ ] File upload system
 
 ## Important Notes
 - **Next.js 16:** Uses `proxy.ts` instead of `middleware.ts` (renamed convention). The exported function must be named `proxy`, not `middleware`.
 - **Prisma 7:** Requires an adapter (`@prisma/adapter-pg`). Cannot instantiate `new PrismaClient()` without passing `{ adapter }`. The generated client lives in `src/generated/prisma/` (gitignored) — import from `@/generated/prisma/client`, not `@/generated/prisma`.
 - **Prisma generate:** Must run `npx prisma generate` after cloning or after schema changes, before the build will pass.
+- **Prisma connections:** `DATABASE_URL` = transaction pooler (port 6543, pgbouncer, for runtime). `DIRECT_URL` = session pooler (port 5432, for migrations/DDL). Host is `aws-1-us-east-1` (not `aws-0`).
 - **Brand colors as CSS vars:** Available as `--color-golden`, `--color-sunset`, `--color-sage`, `--color-midnight`, `--color-sand`, `--color-coral`, `--color-warm-white` in addition to the shadcn semantic vars (primary = Golden, background = Warm White, foreground = Midnight, etc.)
+- **User ID strategy:** Prisma User.id = Supabase auth.users UUID. Set explicitly on creation, not auto-generated. This means no separate supabaseId field needed.
+- **Supabase email confirmation:** Disabled for dev (Auth → Providers → Email → "Confirm email" off). Re-enable for production.
 
 ## Off Limits
-- Don't push to `main` directly once auto-deploy is on
-- Don't change Prisma schema without a migration file
+- Don't push directly to `main` — use feature branches, merge when tested
+- Don't change Prisma schema without running `prisma db push` or a migration
 - No platform transaction fees on payments — Stripe standard rates only
+- Minimize Vercel deploys — each push to `main` costs. Test locally first, build before pushing.
