@@ -1,0 +1,92 @@
+"use client";
+
+import { useState } from "react";
+import { Plus, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ClientCard } from "@/components/dashboard/client-card";
+import { ClientFormSheet } from "@/components/dashboard/client-form";
+import type { Client } from "@/generated/prisma/client";
+
+type ClientWithCount = Client & { projectCount: number };
+
+export function ClientsPageClient({
+  clients,
+}: {
+  clients: ClientWithCount[];
+}) {
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+
+  function handleEdit(client: Client) {
+    setEditingClient(client);
+    setFormOpen(true);
+  }
+
+  function handleOpenChange(open: boolean) {
+    setFormOpen(open);
+    if (!open) setEditingClient(null);
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            Clients
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {clients.length === 0
+              ? "Add clients to start managing their projects."
+              : `${clients.length} client${clients.length !== 1 ? "s" : ""}`}
+          </p>
+        </div>
+        <Button onClick={() => setFormOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+          Add client
+        </Button>
+      </div>
+
+      {/* Client grid or empty state */}
+      {clients.length === 0 ? (
+        <Card className="border-dashed border-border/60">
+          <CardContent className="flex flex-col items-center py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-golden/10">
+              <Users className="h-7 w-7 text-golden" strokeWidth={1.5} />
+            </div>
+            <h2 className="mt-4 font-heading text-lg font-semibold">
+              No clients yet
+            </h2>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              Add your first client to get started. You&apos;ll be able to
+              create projects, track progress, and send invoices.
+            </p>
+            <Button onClick={() => setFormOpen(true)} className="mt-6">
+              <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+              Add your first client
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {clients.map((client) => (
+            <ClientCard
+              key={client.id}
+              client={client}
+              projectCount={client.projectCount}
+              onEdit={handleEdit}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Add/Edit form sheet */}
+      <ClientFormSheet
+        open={formOpen}
+        onOpenChange={handleOpenChange}
+        client={editingClient}
+      />
+    </div>
+  );
+}
