@@ -43,7 +43,7 @@ export async function updateSession(request: NextRequest) {
 
   // Public routes — everything else is protected
   const publicPaths = ["/", "/login", "/signup", "/auth/callback"];
-  const isPublic = publicPaths.includes(path);
+  const isPublic = publicPaths.includes(path) || path.startsWith("/portal");
 
   // Protected routes: redirect to login if not authenticated
   if (!isPublic && !user) {

@@ -200,6 +200,26 @@ export async function moveCard(
   return { success: true };
 }
 
+export async function setupDefaultBoard(projectId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userId: user.id },
+  });
+  if (!project) return { error: "Not found" };
+
+  const defaultColumns = ["To Do", "In Progress", "Review", "Done"];
+  await prisma.$transaction(
+    defaultColumns.map((name, i) =>
+      prisma.column.create({ data: { projectId, name, position: i } })
+    )
+  );
+
+  revalidatePath(`/projects/${projectId}`);
+  return { success: true };
+}
+
 export async function reorderColumns(projectId: string, columnIds: string[]) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not authenticated" };

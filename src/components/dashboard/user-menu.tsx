@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { LogOut, Settings } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -32,6 +33,8 @@ export function UserMenu({
   email: string;
   collapsed: boolean;
 }) {
+  const router = useRouter();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -60,7 +63,7 @@ export function UserMenu({
           {name && <p className="text-xs text-muted-foreground">{email}</p>}
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => router.push("/settings")}>
           <Settings className="mr-2 h-4 w-4" strokeWidth={1.5} />
           Settings
         </DropdownMenuItem>

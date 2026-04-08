@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { ActivityType } from "@/generated/prisma/client";
+import { logActivity } from "@/app/(dashboard)/projects/[id]/log-activity";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -63,6 +65,8 @@ export async function createProject(
         { projectId: project.id, name: "Done", position: 2 },
       ],
     });
+
+    await logActivity(project.id, user.id, ActivityType.PROJECT_CREATED);
   } catch {
     return { error: "Something went wrong. Please try again." };
   }
@@ -114,6 +118,40 @@ export async function updateProject(
     return { error: "Something went wrong. Please try again." };
   }
 
+  // Log status change if it changed
+  if (parsed.data.status !== existing.status) {
+    await logActivity(projectId, user.id, ActivityType.STATUS_CHANGED, {
+      oldStatus: existing.status,
+      newStatus: parsed.data.status,
+    });
+  }
+
+  revalidatePath("/projects");
+  revalidatePath(`/clients/${existing.clientId}`);
+  revalidatePath(`/projects/${projectId}`);
+  return { success: true };
+}
+
+export async function quickUpdateStatus(
+  projectId: string,
+  status: "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED"
+) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const existing = await prisma.project.findFirst({
+    where: { id: projectId, userId: user.id },
+  });
+  if (!existing) return { error: "Project not found" };
+
+  await prisma.project.update({ where: { id: projectId }, data: { status } });
+
+  await logActivity(projectId, user.id, ActivityType.STATUS_CHANGED, {
+    oldStatus: existing.status,
+    newStatus: status,
+  });
+
+  revalidatePath(`/projects/${projectId}`);
   revalidatePath("/projects");
   revalidatePath(`/clients/${existing.clientId}`);
   return { success: true };

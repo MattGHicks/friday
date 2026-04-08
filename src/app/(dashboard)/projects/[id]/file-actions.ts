@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ActorType } from "@/generated/prisma/client";
+import { ActorType, ActivityType } from "@/generated/prisma/client";
+import { logActivity } from "./log-activity";
 
 const BUCKET = "project-files";
 
@@ -88,7 +89,34 @@ export async function uploadFile(
     return { error: "Something went wrong. Please try again." };
   }
 
+  await logActivity(projectId, user.id, ActivityType.FILE_UPLOADED, {
+    fileName: file.name,
+  });
+
   revalidatePath(`/projects/${projectId}`);
+  return { success: true };
+}
+
+export async function toggleDeliverable(
+  fileId: string
+): Promise<{ error?: string; success?: boolean }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const file = await prisma.file.findFirst({
+    where: { id: fileId },
+    include: { project: { select: { userId: true, id: true } } },
+  });
+
+  if (!file) return { error: "File not found" };
+  if (file.project.userId !== user.id) return { error: "File not found" };
+
+  await prisma.file.update({
+    where: { id: fileId },
+    data: { isDeliverable: !file.isDeliverable },
+  });
+
+  revalidatePath(`/projects/${file.project.id}`);
   return { success: true };
 }
 

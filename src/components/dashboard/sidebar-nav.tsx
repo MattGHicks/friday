@@ -8,6 +8,7 @@ import {
   FolderKanban,
   FileText,
   Upload,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -47,6 +48,12 @@ const navItems = [
     href: "/files",
     icon: Upload,
     enabled: false,
+  },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+    enabled: true,
   },
 ];
 

@@ -30,6 +30,7 @@ import {
   CalendarDays,
   X,
   Check,
+  LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +49,7 @@ import {
   deleteCard,
   moveCard,
   reorderColumns,
+  setupDefaultBoard,
 } from "./actions";
 import { format } from "date-fns";
 import type { Card, Column, Project } from "@/generated/prisma/client";
@@ -102,12 +104,15 @@ function KanbanCard({
           {card.description && (
             <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{card.description}</p>
           )}
-          {card.dueDate && (
-            <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-              <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
-              {format(new Date(card.dueDate), "MMM d")}
-            </div>
-          )}
+          {card.dueDate && (() => {
+            const isOverdue = new Date(card.dueDate) < new Date();
+            return (
+              <div className={`mt-2 flex items-center gap-1 text-[11px] ${isOverdue ? "text-coral" : "text-muted-foreground"}`}>
+                <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
+                {isOverdue ? "Overdue · " : ""}{format(new Date(card.dueDate), "MMM d")}
+              </div>
+            );
+          })()}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger className="shrink-0 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100">
@@ -291,6 +296,14 @@ function KanbanColumn({
   }
 
   function handleDelete() {
+    if (
+      column.cards.length > 0 &&
+      !window.confirm(
+        `Delete "${column.name}"? This will also delete ${column.cards.length} card${column.cards.length !== 1 ? "s" : ""}.`
+      )
+    ) {
+      return;
+    }
     startTransition(async () => {
       await deleteColumn(column.id);
       router.refresh();
@@ -384,6 +397,41 @@ function KanbanColumn({
           Add card
         </button>
       )}
+    </div>
+  );
+}
+
+// ── Empty board state ─────────────────────────────────────────
+
+function EmptyBoard({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function handleSetup() {
+    startTransition(async () => {
+      await setupDefaultBoard(projectId);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-golden/10">
+        <LayoutGrid className="h-7 w-7 text-golden" strokeWidth={1.5} />
+      </div>
+      <h3 className="mt-4 font-heading text-base font-semibold">No columns yet</h3>
+      <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+        Set up your board with default columns, or add your own.
+      </p>
+      <div className="mt-5 flex items-center gap-2">
+        <Button onClick={handleSetup} disabled={isPending}>
+          {isPending ? "Setting up…" : "Set up board"}
+        </Button>
+        <span className="text-xs text-muted-foreground">or add columns manually below</span>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground/60">
+        Creates: To Do · In Progress · Review · Done
+      </p>
     </div>
   );
 }
@@ -506,6 +554,10 @@ export function KanbanBoard({ project }: { project: ProjectWithData }) {
       await deleteCard(cardId);
       router.refresh();
     });
+  }
+
+  if (columns.length === 0) {
+    return <EmptyBoard projectId={project.id} />;
   }
 
   return (

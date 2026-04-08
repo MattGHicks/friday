@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Upload, FileText, Image, File, Download, Trash2 } from "lucide-react";
+import { Upload, FileText, Image, File, Download, MessageSquare, Trash2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { uploadFile, deleteFile } from "./file-actions";
+import { uploadFile, deleteFile, toggleDeliverable } from "./file-actions";
 
 export type FileRecord = {
   id: string;
@@ -16,6 +16,7 @@ export type FileRecord = {
   url: string;
   size: number;
   mimeType: string;
+  isDeliverable: boolean;
   createdAt: Date;
 };
 
@@ -80,7 +81,9 @@ export function FilesPanel({
   const router = useRouter();
   const [files, setFiles] = useState<FileRecord[]>(initialFiles);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [, startDeleteTransition] = useTransition();
+  const [, startToggleTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,6 +115,20 @@ export function FilesPanel({
     dt.items.add(droppedFiles[0]);
     fileInputRef.current.files = dt.files;
     formRef.current?.requestSubmit();
+  }
+
+  async function handleToggleDeliverable(fileId: string) {
+    setTogglingId(fileId);
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileId ? { ...f, isDeliverable: !f.isDeliverable } : f
+      )
+    );
+    startToggleTransition(async () => {
+      await toggleDeliverable(fileId);
+      setTogglingId(null);
+      router.refresh();
+    });
   }
 
   async function handleDelete(fileId: string) {
@@ -194,6 +211,44 @@ export function FilesPanel({
 
                 {/* Actions */}
                 <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-8 w-8 transition-colors ${
+                      file.isDeliverable
+                        ? "text-golden hover:text-golden/70"
+                        : "text-muted-foreground hover:text-golden"
+                    }`}
+                    onClick={() => handleToggleDeliverable(file.id)}
+                    disabled={togglingId === file.id}
+                    title={
+                      file.isDeliverable
+                        ? "Remove from deliverables"
+                        : "Mark as deliverable"
+                    }
+                  >
+                    <Star
+                      className="h-4 w-4"
+                      strokeWidth={1.5}
+                      fill={file.isDeliverable ? "currentColor" : "none"}
+                    />
+                    <span className="sr-only">
+                      {file.isDeliverable ? "Remove from" : "Add to"} deliverables
+                    </span>
+                  </Button>
+                  {file.mimeType.startsWith("image/") && (
+                    <a
+                      href={`/projects/${projectId}/review/${file.id}`}
+                      className={
+                        buttonVariants({ variant: "ghost", size: "icon" }) +
+                        " h-8 w-8 text-muted-foreground hover:text-golden"
+                      }
+                      title="Open review"
+                    >
+                      <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
+                      <span className="sr-only">Review {file.name}</span>
+                    </a>
+                  )}
                   <a
                     href={file.url}
                     download

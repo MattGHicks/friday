@@ -6,6 +6,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { KanbanBoardLoader } from "./kanban-board-loader";
 import { FilesPanel } from "./files-panel";
+import { InvoicesPanel } from "./invoices-panel";
+import { ProjectHeaderActions } from "./project-header-actions";
+import { ActivityPanel } from "./activity-panel";
+import type { InvoiceRecord } from "./invoices-panel";
+import type { ActivityRecord } from "./activity-panel";
 import type { ProjectStatus } from "@/generated/prisma/client";
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
@@ -26,20 +31,42 @@ export default async function ProjectDetailPage({
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const activeTab = tab === "files" ? "files" : "board";
+  const activeTab =
+    tab === "files"
+      ? "files"
+      : tab === "invoices"
+      ? "invoices"
+      : tab === "activity"
+      ? "activity"
+      : "board";
   const includeFiles = activeTab === "files";
+  const includeInvoices = activeTab === "invoices";
+  const includeActivity = activeTab === "activity";
 
-  const project = await prisma.project.findFirst({
-    where: { id, userId: user.id },
-    include: {
-      client: { select: { id: true, name: true } },
-      columns: {
-        orderBy: { position: "asc" },
-        include: { cards: { orderBy: { position: "asc" } } },
+  const [project, clients] = await Promise.all([
+    prisma.project.findFirst({
+      where: { id, userId: user.id },
+      include: {
+        client: { select: { id: true, name: true } },
+        columns: {
+          orderBy: { position: "asc" },
+          include: { cards: { orderBy: { position: "asc" } } },
+        },
+        ...(includeFiles ? { files: { orderBy: { createdAt: "desc" } } } : {}),
+        ...(includeInvoices
+          ? { invoices: { orderBy: { createdAt: "desc" } } }
+          : {}),
+        ...(includeActivity
+          ? { activities: { orderBy: { createdAt: "desc" }, take: 50 } }
+          : {}),
       },
-      ...(includeFiles ? { files: { orderBy: { createdAt: "desc" } } } : {}),
-    },
-  });
+    }),
+    prisma.client.findMany({
+      where: { userId: user.id },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   if (!project) notFound();
 
@@ -66,6 +93,17 @@ export default async function ProjectDetailPage({
           {project.description && (
             <span className="text-sm text-muted-foreground">{project.description}</span>
           )}
+          <ProjectHeaderActions
+            project={{
+              id: project.id,
+              name: project.name,
+              description: project.description,
+              status: project.status,
+              dueDate: project.dueDate,
+              clientId: project.client.id,
+            }}
+            clients={clients}
+          />
         </div>
       </div>
 
@@ -91,12 +129,32 @@ export default async function ProjectDetailPage({
         >
           Files
         </Link>
+        <Link
+          href="?tab=invoices"
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "invoices"
+              ? "-mb-px border-b-2 border-golden text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Invoices
+        </Link>
+        <Link
+          href="?tab=activity"
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "activity"
+              ? "-mb-px border-b-2 border-golden text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Activity
+        </Link>
       </div>
 
       {/* Tab content */}
       {activeTab === "board" ? (
         <KanbanBoardLoader project={project} />
-      ) : (
+      ) : activeTab === "files" ? (
         <FilesPanel
           projectId={project.id}
           files={(project.files ?? []).map((f) => ({
@@ -105,8 +163,38 @@ export default async function ProjectDetailPage({
             url: f.url,
             size: f.size,
             mimeType: f.mimeType,
+            isDeliverable: f.isDeliverable,
             createdAt: f.createdAt,
           }))}
+        />
+      ) : activeTab === "invoices" ? (
+        <InvoicesPanel
+          projectId={project.id}
+          clientId={project.client.id}
+          invoices={(project.invoices ?? []).map(
+            (inv): InvoiceRecord => ({
+              id: inv.id,
+              subtotal: inv.subtotal,
+              tax: inv.tax,
+              total: inv.total,
+              status: inv.status,
+              dueDate: inv.dueDate,
+              notes: inv.notes,
+              lineItems: inv.lineItems,
+              createdAt: inv.createdAt,
+            })
+          )}
+        />
+      ) : (
+        <ActivityPanel
+          activities={(project.activities ?? []).map(
+            (a): ActivityRecord => ({
+              id: a.id,
+              action: a.action,
+              metadata: a.metadata,
+              createdAt: a.createdAt,
+            })
+          )}
         />
       )}
     </div>

@@ -8,10 +8,12 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -185,6 +187,7 @@ export function ProjectsPageClient({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [search, setSearch] = useState("");
 
   function handleEdit(project: Project) {
     setEditingProject(project);
@@ -197,6 +200,13 @@ export function ProjectsPageClient({
   }
 
   const hasClients = clients.length > 0;
+  const filtered = search.trim()
+    ? projects.filter(
+        (p) =>
+          p.name.toLowerCase().includes(search.toLowerCase()) ||
+          p.client.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : projects;
 
   return (
     <div className="space-y-6">
@@ -219,6 +229,19 @@ export function ProjectsPageClient({
           </Button>
         )}
       </div>
+
+      {/* Search */}
+      {hasClients && projects.length > 0 && (
+        <div className="relative max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" strokeWidth={1.5} />
+          <Input
+            placeholder="Search projects…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 text-sm"
+          />
+        </div>
+      )}
 
       {/* Projects grid or empty states */}
       {!hasClients ? (
@@ -260,9 +283,13 @@ export function ProjectsPageClient({
             </Button>
           </CardContent>
         </Card>
+      ) : filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          No projects match &ldquo;{search}&rdquo;.
+        </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+          {filtered.map((project) => (
             <ProjectRow
               key={project.id}
               project={project}

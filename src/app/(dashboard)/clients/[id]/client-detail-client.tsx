@@ -12,6 +12,8 @@ import {
   Building2,
   Phone,
   Mail,
+  Link2,
+  Check,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -186,6 +188,15 @@ export function ClientDetailClient({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyPortalLink() {
+    const url = `${window.location.origin}/portal/${client.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   function handleEdit(project: Project) {
     setEditingProject(project);
@@ -240,6 +251,19 @@ export function ClientDetailClient({
             </div>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 text-xs"
+          onClick={handleCopyPortalLink}
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-sage" strokeWidth={1.5} />
+          ) : (
+            <Link2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+          )}
+          {copied ? "Copied!" : "Copy portal link"}
+        </Button>
       </div>
 
       {/* Notes */}
