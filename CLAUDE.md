@@ -3,11 +3,11 @@
 > A branded client portal for freelance designers — design review, invoicing, and file delivery in one calm space.
 
 ## Status
-- **Stage:** building — auth, dashboard, clients, projects, kanban, files, invoices, design review, activity log, client portal, settings all complete. Ready to merge to main.
+- **Stage:** MVP complete — full freelancer dashboard + client portal deployed to Vercel
 - **Deployed:** yes → Vercel (auto-deploys from `main`)
 - **Auto-deploy:** yes → push to `main` deploys to Vercel
 - **Supabase:** connected (project ref: izfblnrrxlvzuvxeexod, MCP configured)
-- **Active branch:** `feature/dashboard-clients` (not yet merged to `main`)
+- **Active branch:** `main`
 
 ## What This Is
 Friday replaces the messy stack of Notion + Google Drive + email threads + HoneyBook with a single, beautiful client portal. Freelance designers get a branded space where clients can check project status, review designs with pin-drop comments, download deliverables, and pay invoices. Key differentiator: visual design review with image annotation.
@@ -205,10 +205,11 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] Build clean, 13 routes (+ not-found), TypeScript passing
 
 ## What's Next
-- [ ] Merge `feature/dashboard-clients` → `main` to deploy to Vercel
 - [ ] Stripe invoicing — payment link on client portal invoice
 - [ ] Email via Resend — notify client when invoice sent / file uploaded
 - [ ] Client portal auth — magic links via Supabase (currently client ID = access token, MVP acceptable)
+- [ ] Landing page — replace placeholder `/` with a real marketing page
+- [ ] Supabase email confirmation — re-enable for production (currently off for dev)
 
 ## Important Notes
 - **Next.js 16:** Uses `proxy.ts` instead of `middleware.ts` (renamed convention). The exported function must be named `proxy`, not `middleware`.
