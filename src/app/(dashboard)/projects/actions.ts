@@ -44,7 +44,7 @@ export async function createProject(
   if (!client) return { error: "Client not found" };
 
   try {
-    await prisma.project.create({
+    const project = await prisma.project.create({
       data: {
         userId: user.id,
         clientId: parsed.data.clientId,
@@ -53,6 +53,15 @@ export async function createProject(
         status: parsed.data.status,
         dueDate: parsed.data.dueDate,
       },
+    });
+
+    // Create default columns
+    await prisma.column.createMany({
+      data: [
+        { projectId: project.id, name: "To Do", position: 0 },
+        { projectId: project.id, name: "In Progress", position: 1 },
+        { projectId: project.id, name: "Done", position: 2 },
+      ],
     });
   } catch {
     return { error: "Something went wrong. Please try again." };

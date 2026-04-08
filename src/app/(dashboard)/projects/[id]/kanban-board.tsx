@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useTransition, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
@@ -23,7 +22,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowLeft,
   Plus,
   MoreHorizontal,
   Pencil,
@@ -34,7 +32,6 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,20 +50,13 @@ import {
   reorderColumns,
 } from "./actions";
 import { format } from "date-fns";
-import type { Card, Column, Project, ProjectStatus } from "@/generated/prisma/client";
+import type { Card, Column, Project } from "@/generated/prisma/client";
 
 type CardWithColumn = Card;
 type ColumnWithCards = Column & { cards: CardWithColumn[] };
 type ProjectWithData = Project & {
   client: { id: string; name: string };
   columns: ColumnWithCards[];
-};
-
-const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
-  ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
-  ON_HOLD: { label: "On hold", className: "bg-golden/20 text-golden border-golden/30" },
-  COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30" },
-  ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50" },
 };
 
 // ── Card component ────────────────────────────────────────────
@@ -418,7 +408,6 @@ export function KanbanBoard({ project }: { project: ProjectWithData }) {
   );
 
   const columnIds = columns.map((c) => c.id);
-  const status = STATUS_CONFIG[project.status];
 
   function handleDragStart(event: DragStartEvent) {
     const { active } = event;
@@ -521,30 +510,6 @@ export function KanbanBoard({ project }: { project: ProjectWithData }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Page header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <Link
-            href={`/clients/${project.client.id}`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
-            {project.client.name}
-          </Link>
-          <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
-            {project.name}
-          </h1>
-          <div className="mt-1 flex items-center gap-2">
-            <Badge variant="outline" className={`text-[11px] ${status.className}`}>
-              {status.label}
-            </Badge>
-            {project.description && (
-              <span className="text-sm text-muted-foreground">{project.description}</span>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Board */}
       <DndContext
         sensors={sensors}
