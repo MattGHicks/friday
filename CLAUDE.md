@@ -6,7 +6,7 @@
 - **Stage:** MVP complete — full freelancer dashboard + client portal deployed to Vercel
 - **Deployed:** yes → Vercel (auto-deploys from `main`)
 - **Auto-deploy:** yes → push to `main` deploys to Vercel
-- **Supabase:** connected (project ref: izfblnrrxlvzuvxeexod, MCP configured)
+- **Supabase:** connected (project ref: izfblnrrxlvzuvxeexod, MCP configured, custom domain: api.itsfriday.dev)
 - **Active branch:** `main`
 
 ## What This Is
@@ -172,6 +172,13 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - After editing React components → `vercel-react-best-practices` for quality review
 - Need a new capability → `find-skills` to search the ecosystem
 
+## Infrastructure
+- **App domain:** `itsfriday.dev` (Vercel, registered via Vercel, nameservers: Vercel)
+- **Supabase domain:** `api.itsfriday.dev` → CNAME → `izfblnrrxlvzuvxeexod.supabase.co` (custom domain addon)
+- **Supabase auth callback:** `https://api.itsfriday.dev/auth/v1/callback`
+- **Google OAuth client:** project `i-t-s-f-r-i-d-a-y` in Google Cloud Console — redirect URI: `https://api.itsfriday.dev/auth/v1/callback`
+- **NEXT_PUBLIC_SUPABASE_URL:** `https://api.itsfriday.dev` (both local and Vercel)
+
 ## What's Done
 - [x] GitHub repo created (private)
 - [x] Next.js 16 scaffold with TypeScript, Tailwind v4, Turbopack
@@ -228,6 +235,8 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - **Supabase Storage:** Use `createAdminClient()` (service role, bypasses RLS) for server-side uploads. Bucket: `project-files` (public). Storage path pattern: `{userId}/{projectId}/{timestamp}-{sanitized-filename}`.
 - **Review button on image files:** Only shows for `mimeType.startsWith("image/")`. Links to `/projects/[id]/review/[fileId]`.
 - **Activity logging:** Import `logActivity` from `./log-activity` in any server action. It wraps in try/catch — never throws. Prisma JSON metadata must be cast: `metadata as Prisma.InputJsonValue`.
+- **OAuth providers:** Google enabled in Supabase. GitHub button is in the UI but provider not yet enabled in Supabase — enable at Auth → Providers → GitHub with a GitHub OAuth App (callback: `https://api.itsfriday.dev/auth/v1/callback`).
+- **oauthSignIn action:** uses `NEXT_PUBLIC_APP_URL` for the redirectTo — correct for both dev and prod without changes.
 - **Client portal:** Routes at `/portal/[clientId]` — public (no auth). Middleware skips paths starting with `/portal`. Access token = client cuid (hard to guess, not cryptographically secure — acceptable for MVP).
 - **Portal URL from dashboard:** Client detail page has "Copy portal link" button — copies `window.location.origin + "/portal/" + clientId`.
 
