@@ -177,7 +177,9 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - **Supabase domain:** `api.itsfriday.dev` → CNAME → `izfblnrrxlvzuvxeexod.supabase.co` (custom domain addon)
 - **Supabase auth callback:** `https://api.itsfriday.dev/auth/v1/callback`
 - **Google OAuth client:** project `i-t-s-f-r-i-d-a-y` in Google Cloud Console — redirect URI: `https://api.itsfriday.dev/auth/v1/callback`
+- **GitHub OAuth app:** `friday` in github.com/settings/developers — callback: `https://api.itsfriday.dev/auth/v1/callback`
 - **NEXT_PUBLIC_SUPABASE_URL:** `https://api.itsfriday.dev` (both local and Vercel)
+- **Vercel Deployment Protection:** currently ON — disable in Project Settings → Deployment Protection when ready to go public
 
 ## What's Done
 - [x] GitHub repo created (private)
@@ -210,13 +212,16 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] **Settings page:** update display name, brand color (with color picker), welcome message for portal; account info (plan, member since)
 - [x] **Branded 404 page:** with friday wordmark and "Back to dashboard" link
 - [x] Build clean, 13 routes (+ not-found), TypeScript passing
+- [x] **Google + GitHub OAuth:** both providers working — `oauthSignIn` server action in `(auth)/actions.ts`, shared `OAuthButtons` component in `(auth)/oauth-buttons.tsx`
+- [x] **Production domain:** `itsfriday.dev` added as Vercel project domain (Production environment)
+- [x] **Supabase custom domain:** `api.itsfriday.dev` — CNAME + TXT verified, activated
+- [x] **Vercel env vars:** all pushed to production (DATABASE_URL, SUPABASE keys, Stripe, Resend)
 
 ## What's Next
-- [ ] Stripe invoicing — payment link on client portal invoice
+- [ ] Stripe — payment link on client portal invoice; re-enable Supabase email confirmation for production
 - [ ] Email via Resend — notify client when invoice sent / file uploaded
 - [ ] Client portal auth — magic links via Supabase (currently client ID = access token, MVP acceptable)
 - [ ] Landing page — replace placeholder `/` with a real marketing page
-- [ ] Supabase email confirmation — re-enable for production (currently off for dev)
 
 ## Important Notes
 - **Next.js 16:** Uses `proxy.ts` instead of `middleware.ts` (renamed convention). The exported function must be named `proxy`, not `middleware`.
@@ -235,7 +240,12 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - **Supabase Storage:** Use `createAdminClient()` (service role, bypasses RLS) for server-side uploads. Bucket: `project-files` (public). Storage path pattern: `{userId}/{projectId}/{timestamp}-{sanitized-filename}`.
 - **Review button on image files:** Only shows for `mimeType.startsWith("image/")`. Links to `/projects/[id]/review/[fileId]`.
 - **Activity logging:** Import `logActivity` from `./log-activity` in any server action. It wraps in try/catch — never throws. Prisma JSON metadata must be cast: `metadata as Prisma.InputJsonValue`.
-- **OAuth providers:** Google enabled in Supabase. GitHub button is in the UI but provider not yet enabled in Supabase — enable at Auth → Providers → GitHub with a GitHub OAuth App (callback: `https://api.itsfriday.dev/auth/v1/callback`).
+- **OAuth providers:** Google + GitHub both enabled. Credentials go into Supabase dashboard (Auth → Providers) — NOT into Next.js env vars. The app only calls `signInWithOAuth({ provider })`.
+- **Vercel project domains:** Must be added via Vercel dashboard (Settings → Domains) — the CLI OAuth token doesn't have domain management API scope. `vercel alias` creates static per-deployment aliases that don't auto-update on new deploys.
+- **Vercel DNS management:** `vercel dns add <domain> <subdomain> <type> <value> --scope <team>` — works instantly since itsfriday.dev uses Vercel nameservers. Used for Supabase custom domain CNAME + ACME TXT challenge.
+- **Supabase custom domain setup:** requires (1) CNAME `api` → `[ref].supabase.co` and (2) TXT `_acme-challenge.api` → value from Supabase dashboard. After activation, update `NEXT_PUBLIC_SUPABASE_URL` in both `.env.local` and Vercel env vars.
+- **Vercel env vars on new projects:** don't auto-populate — push manually: `while IFS='=' read -r key value; do printf '%s' "$value" | vercel env add "$key" production --force; done < .env.local`
+- **GitHub OAuth client IDs:** can start with letter O (not zero) — always copy-paste from the dashboard, never retype.
 - **oauthSignIn action:** uses `NEXT_PUBLIC_APP_URL` for the redirectTo — correct for both dev and prod without changes.
 - **Client portal:** Routes at `/portal/[clientId]` — public (no auth). Middleware skips paths starting with `/portal`. Access token = client cuid (hard to guess, not cryptographically secure — acceptable for MVP).
 - **Portal URL from dashboard:** Client detail page has "Copy portal link" button — copies `window.location.origin + "/portal/" + clientId`.
