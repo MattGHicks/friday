@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import type { ProjectStatus, InvoiceStatus } from "@/generated/prisma/client";
+import { PayInvoiceButton } from "./pay-invoice-button";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
@@ -286,6 +287,9 @@ export default async function ClientProjectPage({
                       <p className="mt-2 text-xs text-muted-foreground/70 border-t border-border/20 pt-2">
                         {inv.notes}
                       </p>
+                    )}
+                    {["SENT", "VIEWED", "OVERDUE"].includes(inv.status) && (
+                      <PayInvoiceButton invoiceId={inv.id} clientId={clientId} />
                     )}
                   </CardContent>
                 </Card>
