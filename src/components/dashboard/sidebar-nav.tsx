@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  FolderKanban,
+  LayoutList,
+  Layers,
   FileText,
   Upload,
   Settings,
@@ -18,12 +19,13 @@ import {
 } from "@/components/ui/tooltip";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard",  icon: LayoutDashboard, enabled: true },
-  { label: "Clients",   href: "/clients",    icon: Users,           enabled: true },
-  { label: "Projects",  href: "/projects",   icon: FolderKanban,    enabled: true },
-  { label: "Invoices",  href: "/invoices",   icon: FileText,        enabled: false },
-  { label: "Files",     href: "/files",      icon: Upload,          enabled: false },
-  { label: "Settings",  href: "/settings",   icon: Settings,        enabled: true },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: true },
+  { label: "Clients",   href: "/clients",   icon: Users,            enabled: true },
+  { label: "Projects",  href: "/projects",  icon: LayoutList,       enabled: true },
+  { label: "Pipeline",  href: "/pipeline",  icon: Layers,           enabled: true },
+  { label: "Invoices",  href: "/invoices",  icon: FileText,         enabled: false },
+  { label: "Files",     href: "/files",     icon: Upload,           enabled: false },
+  { label: "Settings",  href: "/settings",  icon: Settings,         enabled: true },
 ];
 
 export function SidebarNav({ collapsed }: { collapsed: boolean }) {

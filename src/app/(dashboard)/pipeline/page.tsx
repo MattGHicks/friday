@@ -1,8 +1,8 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ProjectsListClient } from "./projects-list-client";
+import { ProjectsPipelineClient } from "../projects/projects-pipeline-client";
 
-export default async function ProjectsPage() {
+export default async function PipelinePage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -15,10 +15,9 @@ export default async function ProjectsPage() {
       where: { userId: user.id },
       include: {
         client: { select: { id: true, name: true, company: true } },
-        stage:  { select: { id: true, name: true, color: true } },
         _count: { select: { invoices: true, files: true } },
       },
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ stagePosition: "asc" }, { createdAt: "desc" }],
     }),
     prisma.client.findMany({
       where: { userId: user.id },
@@ -28,9 +27,9 @@ export default async function ProjectsPage() {
   ]);
 
   return (
-    <ProjectsListClient
-      projects={projects}
+    <ProjectsPipelineClient
       stages={stages}
+      projects={projects}
       clients={clients}
     />
   );

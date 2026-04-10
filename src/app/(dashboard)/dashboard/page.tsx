@@ -307,7 +307,7 @@ export default async function DashboardPage() {
               </span>
             </div>
             <Link
-              href="/projects"
+              href="/pipeline"
               className="text-xs text-cream/40 hover:text-fire transition-colors flex items-center gap-1"
             >
               Open pipeline
@@ -322,7 +322,7 @@ export default async function DashboardPage() {
               return (
                 <Link
                   key={stage.id}
-                  href="/projects"
+                  href="/pipeline"
                   className="group block p-3 rounded-lg border border-white/[0.06] bg-surface-2 hover:border-white/[0.12] hover:bg-surface-3 transition-colors"
                 >
                   <div className="flex items-center gap-1.5 mb-2">
