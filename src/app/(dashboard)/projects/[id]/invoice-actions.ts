@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { InvoiceStatus, ActivityType } from "@/generated/prisma/client";
 import { logActivity } from "./log-activity";
+import { getResend } from "@/lib/resend";
+import { buildInvoiceSentEmail } from "@/lib/email/invoice-sent";
 
 type LineItem = {
   id: string;
@@ -109,7 +111,10 @@ export async function updateInvoiceStatus(
   // Load invoice and verify ownership via its project
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId },
-    include: { project: { select: { userId: true, id: true } } },
+    include: {
+      project: { select: { userId: true, id: true, name: true } },
+      client: { select: { name: true, company: true, email: true } },
+    },
   });
 
   if (!invoice) return { error: "Invoice not found" };
@@ -128,6 +133,51 @@ export async function updateInvoiceStatus(
       invoiceId,
       total: invoice.total,
     });
+
+    // Send email notification to client
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
+      const portalUrl = `${appUrl}/portal/${invoice.clientId}`;
+      const clientDisplayName =
+        invoice.client.company ?? invoice.client.name;
+      const dueDateStr = invoice.dueDate
+        ? invoice.dueDate.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })
+        : null;
+
+      const lineItems = invoice.lineItems as Array<{
+        description: string;
+        quantity: number;
+        unitPrice: number;
+      }>;
+
+      const { subject, html, text } = buildInvoiceSentEmail({
+        freelancerName: user.name ?? user.email,
+        clientName: clientDisplayName,
+        projectName: invoice.project.name,
+        invoiceId,
+        totalCents: invoice.total,
+        dueDateStr,
+        lineItems,
+        portalUrl,
+        notes: invoice.notes,
+      });
+
+      const resend = getResend();
+      await resend.emails.send({
+        from: "Friday <invoices@itsfriday.dev>",
+        to: invoice.client.email,
+        subject,
+        html,
+        text,
+      });
+    } catch (err) {
+      // Email failure must never block the invoice status update
+      console.error("[invoice-sent-email] failed to send:", err);
+    }
   } else if (status === InvoiceStatus.PAID) {
     await logActivity(invoice.project.id, user.id, ActivityType.INVOICE_PAID, {
       invoiceId,
