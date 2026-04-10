@@ -233,7 +233,10 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] **Client portal:** shareable `/portal/[clientId]` — read-only project list with status, files, invoices; project detail with board columns, deliverables, all files, invoice line items; portal footer; welcome message from settings
 - [x] **Settings page:** update display name, brand color (with color picker), welcome message for portal; account info (plan, member since)
 - [x] **Branded 404 page:** with friday wordmark and "Back to dashboard" link
-- [x] Build clean, 13 routes (+ not-found), TypeScript passing
+- [x] **Contact CRUD:** create/edit/delete contacts per client, contact detail in client page
+- [x] **Pipeline stage management:** Settings page has drag-reorder pipeline stage manager with add/edit/delete/default stages
+- [x] **Landing page:** full marketing page at `/` with hero (animated gradient + mockup), "stack strip" (tools replaced), features grid (4 cards), "how it works" (3 steps), portal preview strip, final CTA, footer — all using brand tokens, `animate-fade-up`, `text-gradient-brand`
+- [x] Build clean, 15 routes (+ not-found), TypeScript passing
 - [x] **Google + GitHub OAuth:** both providers working — `oauthSignIn` server action in `(auth)/actions.ts`, shared `OAuthButtons` component in `(auth)/oauth-buttons.tsx`
 - [x] **Production domain:** `itsfriday.dev` added as Vercel project domain (Production environment)
 - [x] **Supabase custom domain:** `api.itsfriday.dev` — CNAME + TXT verified, activated
@@ -252,11 +255,55 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] **Sheet/modal padding fix:** Global `p-6` added to `SheetContent` base styles in `components/ui/sheet.tsx` — all modals now have consistent internal padding without content touching edges
 - [x] **Consistent page-header button sizing:** All primary CTA buttons use `size="default"` (h-9, 36px); secondary link-style buttons use `<Link className={buttonVariants({ variant: "outline" })}>` for uniform height across Clients, Pipeline, and Calendar pages
 
-## What's Next
-- [ ] Stripe — payment link on client portal invoice; re-enable Supabase email confirmation for production
-- [ ] Email via Resend — notify client when invoice sent / file uploaded
-- [ ] Client portal auth — magic links via Supabase (currently client ID = access token, MVP acceptable)
-- [ ] Landing page — replace placeholder `/` with a real marketing page (use `text-gradient-brand`, `animate-fade-up`, `<Logo>` — consistent with new brand system)
+## What's Next (Prioritized)
+1. [ ] **Stripe Connect** — onboarding flow in Settings (connect Stripe account), payment link on client portal invoices, webhook handler at `/api/webhooks/stripe` for payment confirmation. Package installed, zero imports in /src currently.
+2. [ ] **Resend emails** — notify client when invoice sent + file uploaded. Package installed, zero imports in /src currently. Need email templates with Friday branding.
+3. [ ] **Magic-link portal auth** — replace client-ID-as-token with Supabase magic links for client portal access
+4. [ ] **RLS audit** — verify Supabase Row Level Security policies on all 14 Prisma models before public launch
+5. [ ] **Enable Supabase email confirmation** — currently disabled for dev, must enable for production
+6. [ ] **Error monitoring** — add Sentry or Vercel Analytics for unhandled errors
+7. [ ] **Build out orphaned models** — Contract, Message, Notification schema models exist but have zero UI or server actions
+
+## Integration Status
+| Integration | Package Installed | Actually Used in /src | Status |
+|---|---|---|---|
+| Supabase Auth | ✅ | ✅ | Working |
+| Supabase Storage | ✅ | ✅ | Working |
+| Prisma + adapter-pg | ✅ | ✅ | Working |
+| Stripe Connect | ✅ (`stripe`) | ❌ (0 imports) | Not started |
+| Resend | ✅ (`resend`) | ❌ (0 imports) | Not started |
+| dnd-kit | ✅ | ✅ | Working |
+
+## Paperclip (Agent Orchestration)
+Friday is managed by [Paperclip](https://paperclip.mght630.com) running on T630 (Docker).
+
+**Company:** friday (slug FRI)
+**Project:** Friday App — workspace at `/home/matt/projects/friday` on T630
+
+### Org Chart (7 agents, all claude_local adapter)
+```
+CEO (Opus 4.6) — product vision, scope, ticket creation
+├── CTO (Sonnet 4.6) — technical plans, PR review, manages team
+│   ├── Backend Engineer (Sonnet 4.6) — server actions, Prisma, Stripe, auth
+│   ├── Release Engineer (Sonnet 4.6) — ships PRs, Vercel deploys
+│   ├── QA Engineer (Sonnet 4.6) — build verification, visual QA
+│   └── UX Designer (Sonnet 4.6) — brand compliance, visual polish
+└── Growth Strategist (Sonnet 4.6) — landing page, copy, acquisition
+```
+
+### Agent Context Sync
+- Agents run on T630 clone of this repo at `/home/matt/projects/friday`
+- `friday-git-sync` skill triggers `git pull` at start of every heartbeat
+- Agents read this `CLAUDE.md` automatically (it's in their cwd)
+- `.agents/skills/` directory is auto-injected by the claude_local adapter
+- Update this file and push → agents get latest context on next heartbeat
+
+### Skills (25 total)
+Project-specific: friday-conventions, friday-context, friday-git-sync, paperclip-api
+GStack (imported): careful, review, investigate, ship, land-and-deploy, qa, design-review, benchmark
+Marketing: copywriting, seo-audit, launch-strategy, page-cro, marketing-psychology
+Existing: frontend-design, web-design-guidelines, supabase-postgres-best-practices, nextjs-supabase-auth, vercel-react-best-practices, find-skills
+Paperclip built-in: paperclip, paperclip-create-agent, paperclip-create-plugin, para-memory-files
 
 ## Important Notes
 - **Next.js 16:** Uses `proxy.ts` instead of `middleware.ts` (renamed convention). The exported function must be named `proxy`, not `middleware`.
