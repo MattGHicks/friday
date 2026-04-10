@@ -128,6 +128,33 @@ const replacedTools = [
   "Dropbox",
 ];
 
+const testimonials = [
+  {
+    quote:
+      "My clients used to send feedback in 12-email threads with screenshots attached. Now they just drop pins. Honestly embarrassed I waited this long.",
+    name: "Jordan Lee",
+    role: "Brand Identity Designer",
+    gradient: "from-fire to-gold",
+    initials: "JL",
+  },
+  {
+    quote:
+      "The portal link is the first thing I send at kickoff now. Clients know exactly where things stand. No more 'can you resend that file?' at midnight.",
+    name: "Priya Menon",
+    role: "UI & Product Designer",
+    gradient: "from-gold to-cream",
+    initials: "PM",
+  },
+  {
+    quote:
+      "I got paid faster just because the invoice lives next to the work. Client sees the finals, invoice is right there. Two clicks and done.",
+    name: "Marcus Reid",
+    role: "Freelance Illustrator",
+    gradient: "from-fire via-gold to-cream",
+    initials: "MR",
+  },
+];
+
 /* ─── Page ─────────────────────────────────────────────────── */
 
 export default function Home() {
@@ -185,20 +212,21 @@ export default function Home() {
         {/* Headline */}
         <h1 className="animate-fade-up delay-75 font-display font-black leading-[0.92] tracking-tight mb-7">
           <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[88px] text-cream/90">
-            Your clients deserve
+            Feedback in email.
           </span>
           <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[88px] text-gradient-brand">
-            better than a
+            Files in Drive.
           </span>
           <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[88px] text-cream/90">
-            Google Drive link.
+            Both end today.
           </span>
         </h1>
 
         {/* Sub */}
         <p className="animate-fade-up delay-150 text-lg md:text-xl text-cream/45 max-w-[520px] leading-relaxed mb-10">
-          Friday is a branded client portal for freelance designers — design
-          review, invoicing, and file delivery in one calm space.
+          Friday gives freelance designers one branded space — design review,
+          file delivery, and invoicing in a single link your clients actually
+          use.
         </p>
 
         {/* CTAs */}
@@ -392,6 +420,68 @@ export default function Home() {
               </div>
               <PortalMockup />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ── */}
+      <section className="py-28 px-6 bg-[#070707] border-y border-white/[0.04]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="font-mono text-[11px] tracking-[0.22em] uppercase text-fire mb-4">
+              From the community
+            </p>
+            <h2 className="font-display font-black text-4xl md:text-5xl text-cream leading-[1.05] tracking-tight">
+              Designers who stopped
+              <br />
+              juggling tools.
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {testimonials.map((t, i) => (
+              <div
+                key={t.name}
+                className={cn(
+                  "group relative p-7 rounded-2xl border border-white/[0.06] bg-[#141414]",
+                  "hover:border-fire/15 hover:bg-[#161616] transition-all duration-300",
+                  "animate-fade-up flex flex-col",
+                  i === 0 && "delay-0",
+                  i === 1 && "delay-150",
+                  i === 2 && "delay-300"
+                )}
+              >
+                {/* Opening quote mark */}
+                <span
+                  aria-hidden
+                  className="block font-display text-[64px] leading-none text-fire/15 select-none mb-1 -mt-2"
+                >
+                  &ldquo;
+                </span>
+
+                <p className="font-body italic text-[15px] text-cream/60 leading-relaxed flex-1 mb-7">
+                  {t.quote}
+                </p>
+
+                <div className="flex items-center gap-3">
+                  {/* Gradient avatar */}
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-full bg-gradient-to-br flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-[#1A0800]",
+                      t.gradient
+                    )}
+                  >
+                    {t.initials}
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-display font-semibold text-cream/80">
+                      {t.name}
+                    </div>
+                    <div className="text-[11px] text-cream/35">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
