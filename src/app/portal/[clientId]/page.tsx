@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { FolderKanban, FileText, CheckCircle2, Clock, PauseCircle } from "lucide-react";
+import { FolderKanban, FileText, CheckCircle2, Clock, PauseCircle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
@@ -24,10 +24,14 @@ const INVOICE_STATUS: Record<InvoiceStatus, { label: string; className: string }
 
 export default async function ClientPortalPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ clientId: string }>;
+  searchParams: Promise<{ payment?: string }>;
 }) {
   const { clientId } = await params;
+  const { payment } = await searchParams;
+  const paymentSuccess = payment === "success";
 
   const client = await prisma.client.findUnique({
     where: { id: clientId },
@@ -56,6 +60,16 @@ export default async function ClientPortalPage({
 
   return (
     <div className="space-y-8">
+      {/* Payment success banner */}
+      {paymentSuccess && (
+        <div className="flex items-center gap-3 rounded-lg border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-sage">
+          <CheckCircle className="h-5 w-5 shrink-0" strokeWidth={1.5} />
+          <div>
+            <span className="font-medium">Payment received.</span>{" "}
+            <span className="text-sage/80">Your invoice has been paid. Thank you!</span>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
