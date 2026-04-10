@@ -15,7 +15,7 @@ import type { ProjectStatus } from "@/generated/prisma/client";
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
-  ON_HOLD: { label: "On hold", className: "bg-golden/20 text-golden border-golden/30" },
+  ON_HOLD: { label: "On hold", className: "bg-gold/20 text-gold border-gold/30" },
   COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30" },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50" },
 };
@@ -113,7 +113,7 @@ export default async function ProjectDetailPage({
           href="?tab=tasks"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === "tasks"
-              ? "-mb-px border-b-2 border-golden text-foreground"
+              ? "-mb-px border-b-2 border-gold text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -123,7 +123,7 @@ export default async function ProjectDetailPage({
           href="?tab=files"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === "files"
-              ? "-mb-px border-b-2 border-golden text-foreground"
+              ? "-mb-px border-b-2 border-gold text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -133,7 +133,7 @@ export default async function ProjectDetailPage({
           href="?tab=invoices"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === "invoices"
-              ? "-mb-px border-b-2 border-golden text-foreground"
+              ? "-mb-px border-b-2 border-gold text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -143,7 +143,7 @@ export default async function ProjectDetailPage({
           href="?tab=activity"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === "activity"
-              ? "-mb-px border-b-2 border-golden text-foreground"
+              ? "-mb-px border-b-2 border-gold text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >

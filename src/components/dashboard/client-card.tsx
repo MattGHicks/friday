@@ -37,7 +37,7 @@ function getInitials(name: string): string {
 
 // Warm avatar background colors that match the brand
 const avatarColors = [
-  "bg-golden/20 text-golden",
+  "bg-gold/20 text-gold",
   "bg-sunset/20 text-sunset",
   "bg-sage/20 text-sage",
   "bg-[#C08B5C]/20 text-[#C08B5C]",

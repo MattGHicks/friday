@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
-      <span className="font-heading text-2xl font-bold tracking-tight text-golden">
+      <span className="font-heading text-2xl font-bold tracking-tight text-gold">
         friday
       </span>
       <h1 className="mt-6 font-heading text-6xl font-semibold tabular-nums text-foreground">

@@ -63,7 +63,7 @@ const STATUS_CONFIG: Record<
 > = {
   PENDING: {
     label: "Pending review",
-    badgeClass: "bg-golden/20 text-golden border-golden/30",
+    badgeClass: "bg-gold/20 text-gold border-gold/30",
   },
   CHANGES_REQUESTED: {
     label: "Changes requested",
@@ -385,7 +385,7 @@ export function ReviewViewer({
                   "absolute -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-xs font-bold shadow-md transition-all duration-150",
                   a.isResolved
                     ? "bg-sage/70 text-white"
-                    : "bg-golden text-brown-950",
+                    : "bg-gold text-brown-950",
                   selectedId === a.id
                     ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110"
                     : "hover:scale-110",
@@ -404,7 +404,7 @@ export function ReviewViewer({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Ghost pin */}
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-golden/50 text-brown-950 text-xs font-bold ring-2 ring-golden shadow-md">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/50 text-brown-950 text-xs font-bold ring-2 ring-gold shadow-md">
                   {annotations.length + 1}
                 </div>
                 {/* Popover */}
@@ -476,7 +476,7 @@ export function ReviewViewer({
               Comments
             </span>
             {annotations.length > 0 && (
-              <span className="ml-auto rounded-full bg-golden/20 px-2 py-0.5 text-[11px] font-medium text-golden">
+              <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-[11px] font-medium text-gold">
                 {annotations.length}
               </span>
             )}
@@ -486,9 +486,9 @@ export function ReviewViewer({
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {annotations.length === 0 ? (
               <div className="flex flex-col items-center py-10 text-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-golden/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
                   <MessageSquare
-                    className="h-5 w-5 text-golden"
+                    className="h-5 w-5 text-gold"
                     strokeWidth={1.5}
                   />
                 </div>
@@ -509,7 +509,7 @@ export function ReviewViewer({
                     className={[
                       "border-border/40 transition-all duration-150 cursor-pointer",
                       selectedId === annotation.id
-                        ? "border-golden/40 bg-golden/5"
+                        ? "border-gold/40 bg-gold/5"
                         : "hover:border-border/70",
                     ].join(" ")}
                     onClick={() =>
@@ -526,7 +526,7 @@ export function ReviewViewer({
                             "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
                             annotation.isResolved
                               ? "bg-sage/20 text-sage"
-                              : "bg-golden/20 text-golden",
+                              : "bg-gold/20 text-gold",
                           ].join(" ")}
                         >
                           {i + 1}
@@ -619,7 +619,7 @@ export function ReviewViewer({
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="mt-auto h-8 w-8 shrink-0 text-muted-foreground hover:text-golden"
+                              className="mt-auto h-8 w-8 shrink-0 text-muted-foreground hover:text-gold"
                               disabled={
                                 !replyTexts[annotation.id]?.trim() ||
                                 sendingReply === annotation.id
