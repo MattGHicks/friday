@@ -25,15 +25,15 @@ export function SettingsClient({ user }: { user: UserData }) {
   const [state, formAction, isPending] = useActionState(updateSettings, initialState);
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight flex items-center gap-2">
+        <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
           <Settings className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
           Settings
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile and portal preferences.
+          Manage your profile, brand, and pipeline.
         </p>
       </div>
 
@@ -149,7 +149,7 @@ export function SettingsClient({ user }: { user: UserData }) {
       </form>
 
       {/* Account info */}
-      <Card className="border-border/40">
+      <Card className="border-border/40 mt-6">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />

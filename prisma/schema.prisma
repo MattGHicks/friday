@@ -23,11 +23,12 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  clients       Client[]
-  projects      Project[]
-  invoices      Invoice[]
-  contracts     Contract[]
-  notifications Notification[]
+  clients        Client[]
+  projects       Project[]
+  invoices       Invoice[]
+  contracts      Contract[]
+  notifications  Notification[]
+  pipelineStages PipelineStage[]
 
   @@map("users")
 }
@@ -82,22 +83,42 @@ model Contact {
   @@map("contacts")
 }
 
+// ── Pipeline Stages (global per user) ────────────────────────
+
+model PipelineStage {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  position  Int
+  color     String   @default("#E55A3A") // fire by default
+  isDefault Boolean  @default(false)     // one stage marks the default for new projects
+  createdAt DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+
+  @@map("pipeline_stages")
+}
+
 // ── Projects ─────────────────────────────────────────────────
 
 model Project {
   id          String        @id @default(cuid())
   userId      String
   clientId    String
+  stageId     String?
   name        String
   description String?
   status      ProjectStatus @default(ACTIVE)
   startDate   DateTime?
   dueDate     DateTime?
+  stagePosition Int         @default(0)  // order within its pipeline stage
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client   Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  stage    PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
   columns  Column[]
   files    File[]
   reviews  Review[]
@@ -106,6 +127,7 @@ model Project {
   messages  Message[]
   activities Activity[]
 
+  @@index([userId, stageId, stagePosition])
   @@map("projects")
 }
 

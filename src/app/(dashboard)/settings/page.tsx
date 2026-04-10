@@ -1,17 +1,37 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "./settings-client";
+import { PipelineStagesManager } from "./pipeline-stages-manager";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { name: true, email: true, brandColor: true, welcomeMessage: true, plan: true, createdAt: true },
-  });
+  const [dbUser, stages] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        name: true,
+        email: true,
+        brandColor: true,
+        welcomeMessage: true,
+        plan: true,
+        createdAt: true,
+      },
+    }),
+    prisma.pipelineStage.findMany({
+      where: { userId: user.id },
+      orderBy: { position: "asc" },
+      include: { _count: { select: { projects: true } } },
+    }),
+  ]);
 
   if (!dbUser) return null;
 
-  return <SettingsClient user={dbUser} />;
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <SettingsClient user={dbUser} />
+      <PipelineStagesManager stages={stages} />
+    </div>
+  );
 }

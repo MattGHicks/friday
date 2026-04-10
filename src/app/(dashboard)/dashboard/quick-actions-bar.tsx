@@ -1,0 +1,131 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  UserPlus,
+  FolderPlus,
+  Receipt,
+  FileText,
+  CalendarPlus,
+  Plus,
+} from "lucide-react";
+import { ClientFormSheet } from "@/components/dashboard/client-form";
+import { ProjectFormSheet } from "@/components/dashboard/project-form";
+import { cn } from "@/lib/utils";
+
+interface QuickActionsBarProps {
+  clients: { id: string; name: string }[];
+}
+
+export function QuickActionsBar({ clients }: QuickActionsBarProps) {
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [projectFormOpen, setProjectFormOpen] = useState(false);
+
+  const actions = [
+    {
+      label: "New client",
+      icon: UserPlus,
+      onClick: () => setClientFormOpen(true),
+      enabled: true,
+    },
+    {
+      label: "New project",
+      icon: FolderPlus,
+      onClick: () => setProjectFormOpen(true),
+      enabled: clients.length > 0,
+      disabledReason: "Add a client first",
+    },
+    {
+      label: "New invoice",
+      icon: Receipt,
+      href: "/projects",
+      enabled: true,
+    },
+    {
+      label: "New quote",
+      icon: FileText,
+      enabled: false,
+      disabledReason: "Coming soon",
+    },
+    {
+      label: "New meeting",
+      icon: CalendarPlus,
+      enabled: false,
+      disabledReason: "Coming soon",
+    },
+  ];
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const baseClass = cn(
+            "group inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all",
+            action.enabled
+              ? "border-white/[0.08] bg-surface-2/60 text-cream hover:border-fire/30 hover:bg-surface-3 hover:text-cream"
+              : "border-white/[0.04] bg-surface-2/30 text-cream/30 cursor-not-allowed"
+          );
+
+          const content = (
+            <>
+              <Icon
+                className={cn(
+                  "w-4 h-4 transition-colors",
+                  action.enabled
+                    ? "text-fire group-hover:text-gold"
+                    : "text-cream/20"
+                )}
+                strokeWidth={1.75}
+              />
+              {action.label}
+              {action.enabled && (
+                <Plus className="w-3 h-3 text-cream/30 group-hover:text-cream/60 transition-colors" strokeWidth={2} />
+              )}
+            </>
+          );
+
+          if (!action.enabled) {
+            return (
+              <div
+                key={action.label}
+                className={baseClass}
+                title={action.disabledReason}
+              >
+                {content}
+              </div>
+            );
+          }
+
+          if (action.href) {
+            return (
+              <Link key={action.label} href={action.href} className={baseClass}>
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={action.label}
+              type="button"
+              onClick={action.onClick}
+              className={baseClass}
+            >
+              {content}
+            </button>
+          );
+        })}
+      </div>
+
+      <ClientFormSheet open={clientFormOpen} onOpenChange={setClientFormOpen} />
+      <ProjectFormSheet
+        open={projectFormOpen}
+        onOpenChange={setProjectFormOpen}
+        project={null}
+        clients={clients}
+      />
+    </>
+  );
+}
