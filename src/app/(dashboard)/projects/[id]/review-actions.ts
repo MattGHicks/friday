@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { ActorType, ReviewStatus, ActivityType } from "@/generated/prisma/client";
 import { logActivity } from "./log-activity";
+import { sendEmail } from "@/lib/resend";
+import { buildReviewStatusChangedEmail } from "@/lib/email/review-status-changed";
 
 export type AnnotationData = {
   id: string;
@@ -165,7 +167,19 @@ export async function updateReviewStatus(
 
   const review = await prisma.review.findFirst({
     where: { id: reviewId },
-    include: { project: { select: { id: true, userId: true } } },
+    include: {
+      project: {
+        select: {
+          id: true,
+          userId: true,
+          clientId: true,
+          name: true,
+          client: { select: { name: true, email: true } },
+          user: { select: { name: true, email: true } },
+        },
+      },
+      file: { select: { name: true } },
+    },
   });
   if (!review) return { error: "Review not found" };
   if (review.project.userId !== user.id) return { error: "Review not found" };
@@ -188,6 +202,23 @@ export async function updateReviewStatus(
       user.id,
       ActivityType.REVIEW_CHANGES_REQUESTED,
       { reviewId }
+    );
+  }
+
+  // Notify client by email when status changes to APPROVED or CHANGES_REQUESTED
+  if (status === "APPROVED" || status === "CHANGES_REQUESTED") {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
+    const portalUrl = `${appUrl}/portal/${review.project.clientId}`;
+    const { subject, html, text } = buildReviewStatusChangedEmail({
+      freelancerName: review.project.user.name ?? review.project.user.email,
+      clientName: review.project.client.name,
+      projectName: review.project.name,
+      fileName: review.file.name,
+      status,
+      portalUrl,
+    });
+    sendEmail({ to: review.project.client.email, subject, html, text }).catch(
+      (err) => void console.error("[updateReviewStatus] email send failed:", err)
     );
   }
 
