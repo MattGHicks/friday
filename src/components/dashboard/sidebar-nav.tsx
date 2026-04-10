@@ -72,8 +72,7 @@ export function SidebarNav({ collapsed }: { collapsed: boolean }) {
                 <>
                   {/* Gradient icon via clip */}
                   <item.icon
-                    className="h-full w-full"
-                    style={{ color: "#F0A830" }}
+                    className="h-full w-full text-gold"
                     strokeWidth={2}
                   />
                 </>
