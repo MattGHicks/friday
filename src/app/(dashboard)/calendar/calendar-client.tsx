@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   format,
   isSameMonth,
@@ -9,7 +8,6 @@ import {
   isToday,
   addMonths,
   subMonths,
-  startOfMonth,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Plus, CalendarDays, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -83,17 +81,14 @@ export function CalendarClient({
   projects,
   initialMonth,
 }: CalendarClientProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  // Parse initial month from prop
+  const [currentMonthDate, setCurrentMonthDate] = useState(() => {
+    const [y, mo] = initialMonth.split("-").map(Number);
+    return new Date(y, mo - 1, 1);
+  });
 
-  // Parse current month from URL or prop
-  const [year, monthIndex] = (() => {
-    const m = searchParams.get("month") ?? initialMonth;
-    const [y, mo] = m.split("-").map(Number);
-    return [y, mo - 1];
-  })();
-
-  const currentMonthDate = new Date(year, monthIndex, 1);
+  const year = currentMonthDate.getFullYear();
+  const monthIndex = currentMonthDate.getMonth();
   const cells = getCalendarCells(year, monthIndex);
 
   // Sheet state
@@ -105,17 +100,16 @@ export function CalendarClient({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   function navigate(delta: number) {
-    const next = delta > 0
-      ? addMonths(currentMonthDate, 1)
-      : subMonths(currentMonthDate, 1);
-    const m = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
-    router.push(`/calendar?month=${m}`);
+    setCurrentMonthDate((prev) =>
+      delta > 0 ? addMonths(prev, 1) : subMonths(prev, 1)
+    );
+    setSelectedDay(null);
   }
 
   function goToToday() {
     const now = new Date();
-    const m = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    router.push(`/calendar?month=${m}`);
+    setCurrentMonthDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDay(null);
   }
 
   function openNewMeeting(date?: Date) {
