@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "./settings-client";
 import { PipelineStagesManager } from "./pipeline-stages-manager";
+import { StripeConnectCard } from "./stripe-connect-card";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -15,6 +17,7 @@ export default async function SettingsPage() {
         email: true,
         brandColor: true,
         welcomeMessage: true,
+        stripeAccountId: true,
         plan: true,
         createdAt: true,
       },
@@ -31,6 +34,9 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8 max-w-2xl">
       <SettingsClient user={dbUser} />
+      <Suspense>
+        <StripeConnectCard stripeAccountId={dbUser.stripeAccountId} />
+      </Suspense>
       <PipelineStagesManager stages={stages} />
     </div>
   );
