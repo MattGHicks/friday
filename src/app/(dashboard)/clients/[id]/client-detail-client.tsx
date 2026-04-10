@@ -411,34 +411,29 @@ export function ClientDetailClient({
         <div className="flex items-center gap-4">
           <Avatar className="h-14 w-14">
             <AvatarFallback className="bg-gradient-brand text-[#1A0800] text-lg font-bold">
-              {getInitials(client.name)}
+              {getInitials(client.company ?? client.name)}
             </AvatarFallback>
           </Avatar>
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight">
-              {client.name}
+              {client.company ?? client.name}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+              {/* When there's a company, show the person name as the contact */}
               {client.company && (
                 <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Building2 className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {client.company}
+                  <Users className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {client.name}
                 </span>
               )}
-              {/* Show primary contact info in header if different from client name */}
-              {primaryContact && primaryContact.name !== client.name && (
+              {/* Show primary contact email or client email */}
+              {(primaryContact?.email ?? client.email) && (
                 <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {primaryContact.email ?? primaryContact.name}
+                  {primaryContact?.email ?? client.email}
                 </span>
               )}
-              {!primaryContact && client.email && (
-                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {client.email}
-                </span>
-              )}
-              {!primaryContact && client.phone && (
+              {client.phone && (
                 <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Phone className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {client.phone}
@@ -503,7 +498,7 @@ export function ClientDetailClient({
                 No contacts yet
               </h3>
               <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                Add the people you work with at {client.name} — a point of
+                Add the people you work with at {client.company ?? client.name} — a point of
                 contact, billing contact, or stakeholder.
               </p>
               <Button
@@ -558,7 +553,7 @@ export function ClientDetailClient({
                 No projects yet
               </h3>
               <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-                Create a project to start tracking work for {client.name}.
+                Create a project to start tracking work for {client.company ?? client.name}.
               </p>
               <Button
                 size="sm"

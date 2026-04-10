@@ -80,20 +80,19 @@ export function ClientCard({
             <Link href={`/clients/${client.id}`} className="flex min-w-0 flex-1 items-center gap-3">
               <Avatar className="h-10 w-10 shrink-0">
                 <AvatarFallback
-                  className={`text-sm font-semibold ${getAvatarColor(client.name)}`}
+                  className={`text-sm font-semibold ${getAvatarColor(client.company ?? client.name)}`}
                 >
-                  {getInitials(client.name)}
+                  {getInitials(client.company ?? client.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <h3 className="font-heading text-sm font-semibold text-foreground">
-                  {client.name}
+                {/* Company name leads; person name is secondary contact label */}
+                <h3 className="font-heading text-sm font-semibold text-foreground truncate">
+                  {client.company ?? client.name}
                 </h3>
-                {client.company && (
-                  <p className="text-xs text-muted-foreground">
-                    {client.company}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground truncate">
+                  {client.company ? client.name : client.email}
+                </p>
               </div>
             </Link>
 

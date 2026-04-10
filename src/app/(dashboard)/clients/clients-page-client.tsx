@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Users, Search } from "lucide-react";
+import Link from "next/link";
+import { Plus, Users, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,11 +21,13 @@ export function ClientsPageClient({
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
 
-  const filtered = search.trim()
+  const q = search.trim().toLowerCase();
+  const filtered = q
     ? clients.filter(
         (c) =>
-          c.name.toLowerCase().includes(search.toLowerCase()) ||
-          (c.company ?? "").toLowerCase().includes(search.toLowerCase())
+          (c.company ?? c.name).toLowerCase().includes(q) ||
+          c.name.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q)
       )
     : clients;
 
@@ -52,10 +55,19 @@ export function ClientsPageClient({
               : `${clients.length} client${clients.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
-          Add client
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/clients/import"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-surface-2 px-3 py-2 text-sm text-cream/60 hover:text-cream hover:border-white/[0.15] transition-colors"
+          >
+            <Upload className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Import
+          </Link>
+          <Button onClick={() => setFormOpen(true)} size="sm" className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            Add client
+          </Button>
+        </div>
       </div>
 
       {/* Search — only when there are clients */}

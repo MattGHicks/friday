@@ -27,7 +27,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const [{ id }, { tab = "board" }] = await Promise.all([params, searchParams]);
+  const [{ id }, { tab = "tasks" }] = await Promise.all([params, searchParams]);
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -38,7 +38,7 @@ export default async function ProjectDetailPage({
       ? "invoices"
       : tab === "activity"
       ? "activity"
-      : "board";
+      : "tasks";
   const includeFiles = activeTab === "files";
   const includeInvoices = activeTab === "invoices";
   const includeActivity = activeTab === "activity";
@@ -110,14 +110,14 @@ export default async function ProjectDetailPage({
       {/* Tab nav */}
       <div className="flex gap-1 border-b border-border/40">
         <Link
-          href="?tab=board"
+          href="?tab=tasks"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === "board"
+            activeTab === "tasks"
               ? "-mb-px border-b-2 border-golden text-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Board
+          Tasks
         </Link>
         <Link
           href="?tab=files"
@@ -152,7 +152,7 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* Tab content */}
-      {activeTab === "board" ? (
+      {activeTab === "tasks" ? (
         <KanbanBoardLoader project={project} />
       ) : activeTab === "files" ? (
         <FilesPanel
