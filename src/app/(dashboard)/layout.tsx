@@ -12,18 +12,18 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex min-h-full flex-1">
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <Sidebar name={user.name} email={user.email} />
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top bar */}
         <MobileNav name={user.name} email={user.email} />
 
-        {/* Page content */}
-        <main className="flex-1 px-6 py-8 md:px-10">
-          <div className="mx-auto max-w-5xl">{children}</div>
+        {/* Page content — scrolls for normal pages; pipeline opts out via flex-1 + overflow-hidden */}
+        <main className="flex flex-col flex-1 overflow-y-auto px-6 py-8 md:px-10">
+          {children}
         </main>
       </div>
     </div>

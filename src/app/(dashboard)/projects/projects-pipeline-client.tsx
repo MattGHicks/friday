@@ -139,7 +139,7 @@ function StageColumn({
   projects: ProjectWithExtras[];
 }) {
   return (
-    <div className="flex flex-col w-[300px] flex-shrink-0">
+    <div className="flex flex-col min-w-0 h-full">
       {/* Column header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
@@ -288,13 +288,12 @@ export function ProjectsPipelineClient({
   }
 
   return (
-    <div className="flex flex-col h-full -mx-6 -my-8">
+    <div className="flex flex-col flex-1 -mx-6 md:-mx-10 -my-8">
       {/* Header */}
-      <div className="px-6 pt-8 pb-5 border-b border-white/[0.04]">
+      <div className="px-6 md:px-10 pt-8 pb-5 border-b border-white/[0.04]">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Layers className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+            <h1 className="font-display text-2xl font-bold tracking-tight">
               Pipeline
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -309,7 +308,7 @@ export function ProjectsPipelineClient({
             >
               <SettingsIcon className="h-4 w-4" strokeWidth={1.5} />
             </Link>
-            <Button onClick={() => setFormOpen(true)} className="gap-1.5">
+            <Button onClick={() => setFormOpen(true)} size="sm" className="gap-1.5">
               <Plus className="h-3.5 w-3.5" strokeWidth={2} />
               New project
             </Button>
@@ -319,7 +318,7 @@ export function ProjectsPipelineClient({
 
       {/* Pipeline board */}
       {stages.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="flex-1 flex items-center justify-center px-6 md:px-10 py-12">
           <div className="text-center max-w-sm">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fire/10 mb-3">
               <Layers className="h-6 w-6 text-fire" strokeWidth={1.5} />
@@ -336,7 +335,7 @@ export function ProjectsPipelineClient({
           </div>
         </div>
       ) : projects.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="flex-1 flex items-center justify-center px-6 md:px-10 py-12">
           <div className="text-center max-w-sm">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fire/10 mb-3">
               <FolderKanban className="h-6 w-6 text-fire" strokeWidth={1.5} />
@@ -354,14 +353,17 @@ export function ProjectsPipelineClient({
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 py-6">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 md:px-10 py-6 min-h-0">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex gap-4 h-full pb-4">
+            <div
+              className="grid gap-3 h-full pb-4"
+              style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(240px, 1fr))` }}
+            >
               {stages.map((stage) => (
                 <StageColumn
                   key={stage.id}
