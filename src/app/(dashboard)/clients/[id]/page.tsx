@@ -15,13 +15,18 @@ export default async function ClientDetailPage({
   const client = await prisma.client.findFirst({
     where: { id, userId: user.id },
     include: {
-      projects: {
-        orderBy: { createdAt: "desc" },
-      },
+      contacts: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
+      projects: { orderBy: { createdAt: "desc" } },
     },
   });
 
   if (!client) notFound();
 
-  return <ClientDetailClient client={client} projects={client.projects} />;
+  return (
+    <ClientDetailClient
+      client={client}
+      contacts={client.contacts}
+      projects={client.projects}
+    />
+  );
 }
