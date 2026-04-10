@@ -51,6 +51,7 @@ export default async function DashboardPage() {
 
   const [
     clients,
+    projects,
     stages,
     projectsByStageRaw,
     outstandingAgg,
@@ -59,10 +60,16 @@ export default async function DashboardPage() {
     tasksDueSoon,
     recentActivity,
   ] = await Promise.all([
-    // Clients (for quick actions)
+    // Clients (for quick actions + meeting form)
     prisma.client.findMany({
       where: { userId: user.id },
-      select: { id: true, name: true },
+      select: { id: true, name: true, company: true },
+      orderBy: { name: "asc" },
+    }),
+    // Projects (for meeting form)
+    prisma.project.findMany({
+      where: { userId: user.id },
+      select: { id: true, name: true, clientId: true },
       orderBy: { name: "asc" },
     }),
     // Stages (for mini pipeline)
@@ -161,7 +168,7 @@ export default async function DashboardPage() {
 
       {/* ── Quick actions ──────────────────────────────────── */}
       <div className="animate-fade-up delay-75">
-        <QuickActionsBar clients={clients} />
+        <QuickActionsBar clients={clients} projects={projects} />
       </div>
 
       {/* ── Top widgets row (3 cols) ────────────────────────── */}

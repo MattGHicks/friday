@@ -308,8 +308,8 @@ export function ProjectsPipelineClient({
             >
               <SettingsIcon className="h-4 w-4" strokeWidth={1.5} />
             </Link>
-            <Button onClick={() => setFormOpen(true)} size="sm" className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            <Button onClick={() => setFormOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" strokeWidth={2} />
               New project
             </Button>
           </div>

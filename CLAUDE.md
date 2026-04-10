@@ -62,15 +62,19 @@ src/
     (dashboard)/      # Freelancer dashboard (protected, requires auth)
       layout.tsx      # Dashboard shell: sidebar + mobile nav
       dashboard/page.tsx  # Dashboard home — greeting, 3 stat cards, empty CTA
+      dashboard/quick-actions-bar.tsx  # Quick actions (New Client, New Project, New Meeting, New Invoice)
       clients/page.tsx    # Client grid page (server component)
       clients/clients-page-client.tsx  # Client component (add/edit sheet state)
       clients/actions.ts  # createClient, updateClient, deleteClient server actions
-      clients/[id]/page.tsx          # Client detail — header, projects grid
+      clients/import/page.tsx       # CSV contact import page (server component)
+      clients/import-client.tsx     # 3-step CSV wizard: upload → preview/dedupe → confirm
+      clients/import-actions.ts     # importContacts server action
+      clients/[id]/page.tsx          # Client detail — company-first header, projects grid
       clients/[id]/client-detail-client.tsx  # Client detail client component
-      projects/page.tsx              # Projects list (all projects across clients)
+      projects/page.tsx              # Projects list view (all projects, sortable table)
       projects/projects-page-client.tsx
       projects/actions.ts            # createProject, updateProject, deleteProject
-      projects/[id]/page.tsx         # Project detail — Board/Files/Invoices tabs
+      projects/[id]/page.tsx         # Project detail — Tasks/Files/Invoices/Activity tabs
       projects/[id]/actions.ts       # createCard, updateCard, deleteCard, moveCard, createColumn, deleteColumn
       projects/[id]/kanban-board.tsx # Kanban board with dnd-kit drag-and-drop
       projects/[id]/kanban-board-loader.tsx  # SSR wrapper (ssr: false) — fixes dnd-kit hydration
@@ -84,6 +88,11 @@ src/
       projects/[id]/log-activity.ts     # logActivity() helper — call from any server action, never throws
       projects/[id]/activity-panel.tsx  # Timeline feed component, server component
       projects/[id]/project-header-actions.tsx  # Quick status dropdown + Edit button in project header
+      pipeline/page.tsx              # Pipeline kanban board (drag-and-drop stage columns)
+      pipeline/pipeline-client.tsx   # (alias) → projects/projects-pipeline-client.tsx
+      calendar/page.tsx              # Calendar server component — fetches meetings ±2 months
+      calendar/calendar-client.tsx   # Month-view grid, meeting type pills, side panel, click-to-add
+      calendar/meeting-actions.ts    # createMeeting, updateMeeting, deleteMeeting server actions
       settings/page.tsx         # Settings (server component, loads user profile)
       settings/settings-client.tsx  # Settings form — name, brand color, welcome message
       settings/actions.ts       # updateSettings server action
@@ -104,12 +113,14 @@ src/
       logo.tsx        # React SVG component for full FRIDAY wordmark (transparent, gradient, useId() safe)
     dashboard/
       sidebar.tsx         # Collapsible sidebar (256px / 64px icon-only)
-      sidebar-nav.tsx     # Nav items with gradient fire→gold active indicator
+      sidebar-nav.tsx     # Nav items with gradient fire→gold active indicator; includes Calendar
       mobile-nav.tsx      # Mobile hamburger + Sheet overlay
       user-menu.tsx       # Avatar + dropdown (sign out)
       client-card.tsx     # Client card with initials avatar, dropdown actions
       client-form.tsx     # Add/edit client sheet slide-over with useActionState
       project-form.tsx    # Add/edit project sheet slide-over with useActionState
+      meeting-form.tsx    # Add/edit meeting sheet — type pills, date/time split inputs, client/project linking
+      meeting-type-config.ts  # MEETING_TYPE_CONFIG: maps MeetingType → { label, color, bg, border, text }
     ui/               # shadcn/ui components (button, input, card, etc.)
   generated/prisma/   # Auto-generated Prisma client (gitignored, run `npx prisma generate`)
   lib/
@@ -197,7 +208,7 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] Next.js 16 scaffold with TypeScript, Tailwind v4, Turbopack
 - [x] shadcn/ui initialized (button, input, label, card, separator, avatar, badge, dropdown-menu, sheet, dialog, tooltip, textarea)
 - [x] All dependencies installed (Prisma, Supabase, Stripe, Resend, dnd-kit, zod, react-hook-form, lucide-react, date-fns)
-- [x] Full Prisma schema written (13 models) and pushed to Supabase
+- [x] Full Prisma schema written (14 models incl. Meeting + MeetingType enum) and pushed to Supabase
 - [x] Supabase project connected (MCP configured for direct management)
 - [x] Vercel linked (auto-deploys from `main` via GitHub)
 - [x] **Dark-first near-black palette** in globals.css — fire/gold/cream brand tokens, surface scale, gradient utilities (see Full UI overhaul entry below)
@@ -230,6 +241,16 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] **Full UI overhaul:** near-black palette (surface-0 through surface-4), fire/gold/cream gradient brand system, gradient primary button with glow, dark glass cards, gradient text + animated gradient utilities, staggered `animate-fade-up` page entry animations
 - [x] **Font system updated:** Epilogue (display/headings) + DM Sans (body) replacing Plus Jakarta Sans + Inter; configured via `next/font/google` with CSS variable names `--font-display` / `--font-body`
 - [x] **Official brand logos integrated:** `<Emblem>` and `<Logo>` React SVG components in `src/components/brand/`; transparent-background static assets in `public/brand/`; SVG favicon at `src/app/icon.svg` (auto-detected by Next.js App Router)
+- [x] **Calendar page:** month-view grid at `/calendar`, full-height viewport layout (same pattern as Pipeline), color-coded meeting type pills, side panel for selected day detail, click any day to add meeting
+- [x] **Meeting form:** `MeetingFormSheet` in `components/dashboard/meeting-form.tsx` — type selector pills (DISCOVERY/KICKOFF/CHECK_IN/REVIEW/PRESENTATION/GENERAL), date + time split inputs, optional client + project linking, create/edit/delete
+- [x] **Meeting model:** `Meeting` Prisma model + `MeetingType` enum added to schema and pushed to Supabase; `MEETING_TYPE_CONFIG` maps types to visual styles (color, bg, border, label)
+- [x] **CSV contact import:** 3-step wizard at `/clients/import` — upload CSV → preview rows with duplicate detection (matched by email) → confirm import; `importContacts` server action creates new clients and skips dupes; returns `{ created, skipped }` counts
+- [x] **Pipeline split:** `/pipeline` = drag-and-drop kanban board by stage; `/projects` = sortable list view of all projects — two separate pages in sidebar nav
+- [x] **Company-first display:** Client detail page shows company name as headline (h1), person name secondary with Users icon; avatar initials and all references prefer company name when set
+- [x] **Tasks tab:** "Board" renamed to "Tasks" in project detail (`?tab=tasks`); default tab is `tasks`
+- [x] **New Meeting quick action enabled:** Dashboard quick actions bar opens `MeetingFormSheet` (was previously `enabled: false`); `QuickActionsBar` now accepts `clients` + `projects` props passed from server component
+- [x] **Sheet/modal padding fix:** Global `p-6` added to `SheetContent` base styles in `components/ui/sheet.tsx` — all modals now have consistent internal padding without content touching edges
+- [x] **Consistent page-header button sizing:** All primary CTA buttons use `size="default"` (h-9, 36px); secondary link-style buttons use `<Link className={buttonVariants({ variant: "outline" })}>` for uniform height across Clients, Pipeline, and Calendar pages
 
 ## What's Next
 - [ ] Stripe — payment link on client portal invoice; re-enable Supabase email confirmation for production
@@ -266,6 +287,11 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - **oauthSignIn action:** uses `NEXT_PUBLIC_APP_URL` for the redirectTo — correct for both dev and prod without changes.
 - **Client portal:** Routes at `/portal/[clientId]` — public (no auth). Middleware skips paths starting with `/portal`. Access token = client cuid (hard to guess, not cryptographically secure — acceptable for MVP).
 - **Portal URL from dashboard:** Client detail page has "Copy portal link" button — copies `window.location.origin + "/portal/" + clientId`.
+- **Calendar navigation without useSearchParams:** Calendar uses `useState` for month navigation (not `useRouter`/`useSearchParams`) because `useSearchParams()` requires a `<Suspense>` boundary or it throws at runtime. Since the server pre-fetches a ±2 month meeting window on initial load, pure client-side state navigation covers the common case.
+- **Meeting type config:** `MEETING_TYPE_CONFIG` in `components/dashboard/meeting-type-config.ts` maps `MeetingType` enum values to `{ label, color, bg, border, text }`. Import this wherever meetings need to be rendered with type-specific colors (calendar pills, side panel cards, etc.).
+- **CSV import deduplication:** `importContacts` checks existing clients by email (case-insensitive). Rows that match an existing client email are skipped and counted in `skipped`. Created clients are counted in `created`. The wizard shows a preview step before any DB writes.
+- **Full-height page pattern:** Pages that fill the viewport (Calendar, Pipeline) use: outer `<div className="flex flex-col flex-1 -mx-6 md:-mx-10 -my-8">`, header with `border-b border-white/[0.04]`, body with `flex-1 flex flex-col min-h-0`. Internal grids use `flex-1` + `grid-rows-N` to distribute height evenly.
+- **Button sizing convention:** Use `size="default"` (h-9, 36px) for all page-header action buttons. Use `<Link className={buttonVariants({ variant: "outline" })}>` for secondary link-style buttons to match height precisely — never mix `size="sm"` CTAs with default-sized ones in the same header row.
 
 ## Off Limits
 - Don't push directly to `main` — use feature branches, merge when tested

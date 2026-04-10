@@ -12,15 +12,18 @@ import {
 } from "lucide-react";
 import { ClientFormSheet } from "@/components/dashboard/client-form";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
+import { MeetingFormSheet } from "@/components/dashboard/meeting-form";
 import { cn } from "@/lib/utils";
 
 interface QuickActionsBarProps {
-  clients: { id: string; name: string }[];
+  clients: { id: string; name: string; company: string | null }[];
+  projects: { id: string; name: string; clientId: string }[];
 }
 
-export function QuickActionsBar({ clients }: QuickActionsBarProps) {
+export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
   const [clientFormOpen, setClientFormOpen] = useState(false);
   const [projectFormOpen, setProjectFormOpen] = useState(false);
+  const [meetingFormOpen, setMeetingFormOpen] = useState(false);
 
   const actions = [
     {
@@ -51,8 +54,8 @@ export function QuickActionsBar({ clients }: QuickActionsBarProps) {
     {
       label: "New meeting",
       icon: CalendarPlus,
-      enabled: false,
-      disabledReason: "Coming soon",
+      onClick: () => setMeetingFormOpen(true),
+      enabled: true,
     },
   ];
 
@@ -125,6 +128,12 @@ export function QuickActionsBar({ clients }: QuickActionsBarProps) {
         onOpenChange={setProjectFormOpen}
         project={null}
         clients={clients}
+      />
+      <MeetingFormSheet
+        open={meetingFormOpen}
+        onOpenChange={setMeetingFormOpen}
+        clients={clients}
+        projects={projects}
       />
     </>
   );

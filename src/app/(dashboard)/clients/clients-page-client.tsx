@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, Users, Search, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClientCard } from "@/components/dashboard/client-card";
@@ -58,13 +58,13 @@ export function ClientsPageClient({
         <div className="flex items-center gap-2">
           <Link
             href="/clients/import"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-surface-2 px-3 py-2 text-sm text-cream/60 hover:text-cream hover:border-white/[0.15] transition-colors"
+            className={buttonVariants({ variant: "outline" })}
           >
-            <Upload className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <Upload className="h-4 w-4" strokeWidth={1.5} />
             Import
           </Link>
-          <Button onClick={() => setFormOpen(true)} size="sm" className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+          <Button onClick={() => setFormOpen(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" strokeWidth={2} />
             Add client
           </Button>
         </div>

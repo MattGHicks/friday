@@ -148,8 +148,9 @@ export function CalendarClient({
     : [];
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-up">
+    <div className="flex flex-col flex-1 -mx-6 md:-mx-10 -my-8">
       {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="px-6 md:px-10 pt-8 pb-5 border-b border-white/[0.04]">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="font-display text-2xl font-bold text-cream">
@@ -186,18 +187,20 @@ export function CalendarClient({
         </div>
 
         <Button
-          size="sm"
           onClick={() => openNewMeeting()}
           className="gap-1.5"
         >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
           New meeting
         </Button>
       </div>
+      </div>
 
-      <div className="flex gap-6 items-start">
+      {/* ── Body ───────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col px-6 md:px-10 py-6 min-h-0">
+        <div className="flex gap-6 flex-1 min-h-0">
         {/* ── Calendar grid ──────────────────────────────────────── */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col">
           {/* Day headers */}
           <div className="grid grid-cols-7 mb-1">
             {DAY_HEADERS.map((day, i) => (
@@ -213,8 +216,8 @@ export function CalendarClient({
             ))}
           </div>
 
-          {/* Grid cells */}
-          <div className="grid grid-cols-7 border-l border-t border-white/[0.04] rounded-xl overflow-hidden">
+          {/* Grid cells — 6 rows that fill remaining height */}
+          <div className="flex-1 grid grid-cols-7 grid-rows-6 border-l border-t border-white/[0.04] rounded-xl overflow-hidden">
             {cells.map((cell, idx) => {
               const isCurrentMonth = isSameMonth(cell, currentMonthDate);
               const isWeekend = idx % 7 === 0 || idx % 7 === 6;
@@ -233,7 +236,7 @@ export function CalendarClient({
                     if (isCurrentMonth) openNewMeeting(cell);
                   }}
                   className={cn(
-                    "relative border-r border-b border-white/[0.04] p-1.5 min-h-[100px] cursor-pointer transition-colors group",
+                    "relative border-r border-b border-white/[0.04] p-1.5 cursor-pointer transition-colors group overflow-hidden",
                     isWeekend && "bg-white/[0.015]",
                     todayCell && "bg-fire/[0.04]",
                     isSelected && !todayCell && "bg-white/[0.03]",
@@ -305,7 +308,7 @@ export function CalendarClient({
 
         {/* ── Side panel — selected day detail ─────────────────── */}
         {selectedDay && (
-          <div className="w-64 shrink-0 rounded-xl border border-white/[0.06] bg-surface-2 p-4 animate-fade-in-scale">
+          <div className="w-64 shrink-0 rounded-xl border border-white/[0.06] bg-surface-2 p-4 animate-fade-in-scale self-start sticky top-0">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-cream/35">
@@ -393,6 +396,7 @@ export function CalendarClient({
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* ── Meeting form sheet ──────────────────────────────────── */}
