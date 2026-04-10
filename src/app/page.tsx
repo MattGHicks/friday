@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,62 @@ import {
   ArrowRight,
   Lock,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Friday — Branded Client Portal for Freelance Designers",
+  description:
+    "Stop juggling Notion, Google Drive, and HoneyBook. Friday gives freelance designers one branded space for design review, invoicing, and file delivery.",
+  keywords: [
+    "client portal for freelance designers",
+    "freelance designer client portal",
+    "HoneyBook alternative",
+    "design review tool for freelancers",
+    "freelance invoicing software",
+    "client portal software",
+  ],
+  alternates: {
+    canonical: "https://itsfriday.dev",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    title: "Friday — Branded Client Portal for Freelance Designers",
+    description:
+      "Stop juggling Notion, Google Drive, and HoneyBook. Friday gives freelance designers one branded space for design review, invoicing, and file delivery.",
+    url: "https://itsfriday.dev",
+    siteName: "Friday",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Friday — a branded client portal showing pin-drop design review, project status, and invoicing in a dark-mode interface",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Friday — Branded Client Portal for Freelance Designers",
+    description:
+      "Stop juggling Notion, Google Drive, and HoneyBook. Friday gives freelance designers one branded space for design review, invoicing, and file delivery.",
+    images: [
+      {
+        url: "/og-image.png",
+        alt: "Friday — a branded client portal showing pin-drop design review, project status, and invoicing in a dark-mode interface",
+      },
+    ],
+  },
+};
 
 /* ─── Static data ──────────────────────────────────────────── */
 

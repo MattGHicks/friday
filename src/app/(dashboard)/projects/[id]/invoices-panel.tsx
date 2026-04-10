@@ -39,11 +39,11 @@ const STATUS_CONFIG: Record<
   },
   SENT: {
     label: "Sent",
-    className: "bg-golden/20 text-golden border-golden/30",
+    className: "bg-gold/20 text-gold border-gold/30",
   },
   VIEWED: {
     label: "Viewed",
-    className: "bg-golden/10 text-golden/70 border-golden/20",
+    className: "bg-gold/10 text-gold/70 border-gold/20",
   },
   PAID: {
     label: "Paid",
@@ -235,7 +235,7 @@ function CreateInvoiceForm({
             <button
               type="button"
               onClick={addItem}
-              className="mt-1 flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-golden/10 hover:text-golden"
+              className="mt-1 flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-gold/10 hover:text-gold"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
               Add line item
@@ -309,7 +309,7 @@ function CreateInvoiceForm({
                   )}
                   <div className="mt-1 flex items-center justify-between border-t border-border/40 pt-2 font-semibold">
                     <span>Total</span>
-                    <span className="text-golden">{formatMoney(totalCents)}</span>
+                    <span className="text-gold">{formatMoney(totalCents)}</span>
                   </div>
                 </div>
               </div>
@@ -358,8 +358,8 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
   return (
     <div className="flex items-center gap-4 rounded-lg border border-border/40 bg-card/60 px-4 py-3 transition-colors hover:bg-card/80">
       {/* Icon */}
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-golden/10">
-        <FileText className="h-4 w-4 text-golden" strokeWidth={1.5} />
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gold/10">
+        <FileText className="h-4 w-4 text-gold" strokeWidth={1.5} />
       </div>
 
       {/* Main info */}
@@ -399,7 +399,7 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
         <button
           onClick={handleMarkSent}
           disabled={pending}
-          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-golden/10 hover:text-golden disabled:pointer-events-none disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-gold/10 hover:text-gold disabled:pointer-events-none disabled:opacity-50"
           title="Mark as sent"
         >
           <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -484,7 +484,7 @@ export function InvoicesPanel({
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Outstanding
             </p>
-            <p className="mt-1 font-heading text-xl font-semibold tabular-nums text-golden">
+            <p className="mt-1 font-heading text-xl font-semibold tabular-nums text-gold">
               {formatMoney(totalOutstanding)}
             </p>
           </div>
@@ -539,8 +539,8 @@ export function InvoicesPanel({
       ) : (
         !showForm && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-border/40 border-dashed px-6 py-12 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-golden/10">
-              <FileText className="h-5 w-5 text-golden" strokeWidth={1.5} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
+              <FileText className="h-5 w-5 text-gold" strokeWidth={1.5} />
             </div>
             <div>
               <p className="text-sm font-medium">No invoices yet</p>
