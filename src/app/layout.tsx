@@ -24,13 +24,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Friday — Client Portal for Freelance Designers",
+  metadataBase: new URL("https://itsfriday.dev"),
+  title: {
+    default: "Friday — Branded Client Portal for Freelance Designers",
+    template: "%s | Friday",
+  },
   description:
-    "A branded client portal for freelance designers. Design review, invoicing, and file delivery in one calm space.",
+    "Stop juggling Notion, Google Drive, and HoneyBook. Friday gives freelance designers one branded space for design review, invoicing, and file delivery.",
   icons: {
-    icon: [
-      { url: "/brand/emblem.svg", type: "image/svg+xml" },
-    ],
+    icon: [{ url: "/brand/emblem.svg", type: "image/svg+xml" }],
     apple: "/brand/emblem.svg",
   },
 };
