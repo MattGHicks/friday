@@ -72,7 +72,7 @@ export function ClientFormSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form action={formAction} className="mt-6 space-y-5">
+        <form key={client?.id ?? "new"} action={formAction} className="mt-6 space-y-5">
           {isEdit && <input type="hidden" name="clientId" value={client.id} />}
 
           {state.error && (

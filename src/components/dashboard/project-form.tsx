@@ -100,7 +100,7 @@ export function ProjectFormSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form action={formAction} className="mt-6 space-y-5">
+        <form key={project?.id ?? "new"} action={formAction} className="mt-6 space-y-5">
           {isEdit && <input type="hidden" name="projectId" value={project.id} />}
           <input type="hidden" name="clientId" value={clientId} />
           <input type="hidden" name="status" value={status} />

@@ -100,7 +100,7 @@ export function ContactFormSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="space-y-4">
+        <form key={contact?.id ?? "new"} action={handleSubmit} className="space-y-4">
           {/* Name */}
           <div className="space-y-1.5">
             <Label htmlFor="name">Name *</Label>
