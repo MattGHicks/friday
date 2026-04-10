@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ActorType, ActivityType } from "@/generated/prisma/client";
 import { logActivity } from "./log-activity";
+import { sendEmail } from "@/lib/resend";
+import { buildFileUploadedEmail } from "@/lib/email/file-uploaded";
 
 const BUCKET = "project-files";
 
@@ -38,9 +40,13 @@ export async function uploadFile(
   if (!projectId) return { error: "Project ID is required" };
   if (!file || file.size === 0) return { error: "No file provided" };
 
-  // Verify project ownership
+  // Verify project ownership and load client + user for email notification
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: user.id },
+    include: {
+      client: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true } },
+    },
   });
   if (!project) return { error: "Project not found" };
 
@@ -92,6 +98,20 @@ export async function uploadFile(
   await logActivity(projectId, user.id, ActivityType.FILE_UPLOADED, {
     fileName: file.name,
   });
+
+  // Notify the client by email — fire-and-forget, never block the upload response
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
+  const portalUrl = `${appUrl}/portal/${project.clientId}`;
+  const { subject, html, text } = buildFileUploadedEmail({
+    freelancerName: project.user.name ?? project.user.email,
+    clientName: project.client.name,
+    projectName: project.name,
+    fileName: file.name,
+    portalUrl,
+  });
+  sendEmail({ to: project.client.email, subject, html, text }).catch(
+    (err) => void console.error("[uploadFile] email send failed:", err)
+  );
 
   revalidatePath(`/projects/${projectId}`);
   return { success: true };
