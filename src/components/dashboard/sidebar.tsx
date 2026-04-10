@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 import { Separator } from "@/components/ui/separator";
+import { Emblem } from "@/components/brand/emblem";
+import { Logo } from "@/components/brand/logo";
 
 export function Sidebar({
   name,
@@ -20,50 +22,52 @@ export function Sidebar({
     <aside
       className={cn(
         "hidden flex-col border-r border-sidebar-border bg-sidebar md:flex",
-        "transition-[width] duration-200 ease-out",
-        collapsed ? "w-16" : "w-64"
+        "transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        collapsed ? "w-[60px]" : "w-[240px]"
       )}
     >
-      {/* Wordmark */}
+      {/* ── Wordmark ────────────────────────────────── */}
       <div
         className={cn(
-          "flex h-14 items-center border-b border-sidebar-border px-4",
-          collapsed && "justify-center px-0"
+          "flex h-[60px] shrink-0 items-center border-b border-sidebar-border",
+          collapsed ? "justify-center px-0" : "px-5"
         )}
       >
         {collapsed ? (
-          <span className="font-heading text-lg font-bold text-golden">f</span>
+          <Emblem className="h-8 w-8" />
         ) : (
-          <span className="font-heading text-lg font-bold tracking-tight text-golden">
-            friday
-          </span>
+          <Logo className="h-8 w-auto" />
         )}
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto py-4">
+      {/* ── Navigation ──────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         <SidebarNav collapsed={collapsed} />
       </div>
 
-      <Separator />
+      <Separator className="bg-sidebar-border" />
 
-      {/* User section */}
-      <div className="p-3">
+      {/* ── User ────────────────────────────────────── */}
+      <div className="p-2.5">
         <UserMenu name={name} email={email} collapsed={collapsed} />
       </div>
 
-      <Separator />
+      <Separator className="bg-sidebar-border" />
 
-      {/* Collapse toggle */}
+      {/* ── Collapse toggle ─────────────────────────── */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex h-10 items-center justify-center text-muted-foreground transition-colors duration-200 hover:text-foreground"
+        className={cn(
+          "flex h-10 items-center text-muted-foreground",
+          "transition-colors duration-200 hover:text-cream hover:bg-white/[0.04]",
+          collapsed ? "justify-center" : "px-5"
+        )}
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? (
-          <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
+          <PanelLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
         ) : (
-          <PanelLeftClose className="h-4 w-4" strokeWidth={1.5} />
+          <PanelLeftClose className="h-3.5 w-3.5" strokeWidth={1.5} />
         )}
       </button>
     </aside>

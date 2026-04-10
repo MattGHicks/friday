@@ -96,11 +96,15 @@ src/
     not-found.tsx     # Branded 404 page
     layout.tsx        # Root layout with fonts + metadata
     page.tsx          # Placeholder landing page
-    globals.css       # Tailwind v4 theme — dark-first warm brown palette
+    globals.css       # Tailwind v4 theme — near-black dark palette, fire/gold/cream brand tokens, surface scale, gradient utilities, animations
+    icon.svg          # SVG favicon — auto-detected by Next.js App Router as /icon.svg route
   components/
+    brand/
+      emblem.tsx      # React SVG component for F icon mark (transparent, gradient, useId() safe)
+      logo.tsx        # React SVG component for full FRIDAY wordmark (transparent, gradient, useId() safe)
     dashboard/
       sidebar.tsx         # Collapsible sidebar (256px / 64px icon-only)
-      sidebar-nav.tsx     # Nav items with golden active indicator
+      sidebar-nav.tsx     # Nav items with gradient fire→gold active indicator
       mobile-nav.tsx      # Mobile hamburger + Sheet overlay
       user-menu.tsx       # Avatar + dropdown (sign out)
       client-card.tsx     # Client card with initials avatar, dropdown actions
@@ -121,14 +125,21 @@ src/
 prisma/
   schema.prisma       # Full MVP database schema (13 models, all enums)
 prisma.config.ts      # Prisma config (loads .env.local, uses DIRECT_URL for migrations)
+public/
+  brand/
+    emblem.svg        # Transparent background emblem (static use: emails, embeds)
+    logo-full.svg     # Transparent background full wordmark (static use)
 docs/
   friday-mvp-spec.md  # Full product spec with 8-week build plan
   friday-brand-bible.md  # Brand voice, colors, typography, positioning
 ```
 
 ## Key Conventions
-- **Styling:** Tailwind utility classes. Use Tailwind tokens not raw hex. Prefer opacity variants (bg-golden/20) over hardcoded colors.
-- **Typography:** Plus Jakarta Sans for headings (--font-heading / font-heading), Inter for body (--font-sans), JetBrains Mono for data/code (--font-mono).
+- **Styling:** Tailwind utility classes. Use Tailwind tokens not raw hex. Prefer opacity variants (`bg-fire/20`) over hardcoded colors.
+- **Typography:** Epilogue for headings (`font-display` / `--font-display`), DM Sans for body (`font-body` / `--font-body`), JetBrains Mono for data/code (`font-mono` / `--font-code`).
+- **Brand color tokens:** `--color-fire` (`#E55A3A`), `--color-gold` (`#F0A830`), `--color-cream` (`#F5EDD0`), `--color-sage`, `--color-coral`. Tailwind: `bg-fire`, `text-gold`, `from-fire`, `to-gold`, etc.
+- **Gradient utilities:** `.text-gradient-brand` (gradient text), `.bg-gradient-brand` (horizontal fire→gold→cream), `.bg-gradient-brand-vertical` (used for nav indicator). Also `animate-fade-up` + `.delay-{75,150,225,300,400,500}` for staggered entry animations.
+- **Logo components:** Always use `<Logo>` or `<Emblem>` from `@/components/brand/` — never raw text or `<img>` tags for the wordmark. Both use `useId()` for safe multi-instance SVG gradient/clipPath IDs.
 - **Components:** shadcn/ui base, extend don't override. Note: this shadcn version uses base-ui primitives — **no asChild support**. Apply className directly on triggers, or use `<Link className={buttonVariants()}>` instead of `<Button asChild><Link>`.
 - **Types:** All types in `src/lib/types.ts` or colocated — no `any`
 - **DB:** All schema changes go through `prisma db push` (dev) or a Prisma migration (prod) — never edit prod DB directly
@@ -137,11 +148,11 @@ docs/
 - **Motion:** Subtle transitions (200ms ease-out), no bouncy animations. Card hover: `-translate-y-0.5` + shadow lift.
 
 ## Design Principles
-- **Dark-first.** The `:root` is dark warm-brown (#2D2621 background, #261F1B sidebar). A `.light` class is available but not the default.
-- **Warm brown leather palette** — like a designer's study at golden hour. No cold grays or blues.
-- **Golden accent sparingly** — active nav, primary CTAs, wordmark. Never as a background fill.
-- **Sidebar depth hierarchy** — sidebar (#261F1B) is darker than main content (#2D2621), giving perceived depth.
-- Clean, minimal, warm — "golden hour on a Friday afternoon"
+- **Dark-first, near-black.** `:root` background `#0F0F0F`, cards `#141414`, sidebar `#080808`. No warm-brown — pure dark with warm light.
+- **Brand gradient: fire → gold → cream** — `#E55A3A` → `#F0A830` → `#F5EDD0`. Used on: wordmark, primary buttons, active nav indicator, hero elements. Never as large background fills.
+- **Surface depth hierarchy** — sidebar (`#080808`) → bg (`#0F0F0F`) → cards (`#141414`) → inputs (`#1C1C1C`) → hover (`#242424`). Tailwind tokens: `surface-0` through `surface-4`.
+- **Epilogue** for display/headings (`--font-display`), **DM Sans** for body (`--font-body`), JetBrains Mono for code/data (`--font-code`).
+- Clean, dramatic, warm light against darkness — "golden hour on a Friday afternoon"
 - The UI itself is a selling point — design quality IS the product
 - Mobile-responsive (client portal must work perfectly on phone)
 - Fast — optimize for perceived performance
@@ -189,8 +200,8 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] Full Prisma schema written (13 models) and pushed to Supabase
 - [x] Supabase project connected (MCP configured for direct management)
 - [x] Vercel linked (auto-deploys from `main` via GitHub)
-- [x] **Dark-first warm brown palette** in globals.css (`:root` = dark, `.light` = cream option)
-- [x] Fonts configured (Plus Jakarta Sans, Inter, JetBrains Mono via next/font)
+- [x] **Dark-first near-black palette** in globals.css — fire/gold/cream brand tokens, surface scale, gradient utilities (see Full UI overhaul entry below)
+- [x] Fonts configured (Epilogue, DM Sans, JetBrains Mono via next/font)
 - [x] Agent skills installed (6 skills)
 - [x] **Auth system complete:** signup, login, logout (email/password)
 - [x] **Route protection:** middleware redirects unauthenticated → /login, authenticated → /dashboard
@@ -216,12 +227,15 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - [x] **Production domain:** `itsfriday.dev` added as Vercel project domain (Production environment)
 - [x] **Supabase custom domain:** `api.itsfriday.dev` — CNAME + TXT verified, activated
 - [x] **Vercel env vars:** all pushed to production (DATABASE_URL, SUPABASE keys, Stripe, Resend)
+- [x] **Full UI overhaul:** near-black palette (surface-0 through surface-4), fire/gold/cream gradient brand system, gradient primary button with glow, dark glass cards, gradient text + animated gradient utilities, staggered `animate-fade-up` page entry animations
+- [x] **Font system updated:** Epilogue (display/headings) + DM Sans (body) replacing Plus Jakarta Sans + Inter; configured via `next/font/google` with CSS variable names `--font-display` / `--font-body`
+- [x] **Official brand logos integrated:** `<Emblem>` and `<Logo>` React SVG components in `src/components/brand/`; transparent-background static assets in `public/brand/`; SVG favicon at `src/app/icon.svg` (auto-detected by Next.js App Router)
 
 ## What's Next
 - [ ] Stripe — payment link on client portal invoice; re-enable Supabase email confirmation for production
 - [ ] Email via Resend — notify client when invoice sent / file uploaded
 - [ ] Client portal auth — magic links via Supabase (currently client ID = access token, MVP acceptable)
-- [ ] Landing page — replace placeholder `/` with a real marketing page
+- [ ] Landing page — replace placeholder `/` with a real marketing page (use `text-gradient-brand`, `animate-fade-up`, `<Logo>` — consistent with new brand system)
 
 ## Important Notes
 - **Next.js 16:** Uses `proxy.ts` instead of `middleware.ts` (renamed convention). The exported function must be named `proxy`, not `middleware`.
@@ -231,8 +245,11 @@ Skills live in `.agents/skills/` (universal) with symlinks in `.claude/skills/` 
 - **Prisma schema errors:** `.error.issues[0].message` (not `.errors`) for zod validation messages.
 - **Middleware static assets:** Must skip `/_next/`, `/api/`, and paths with `.` (file extensions) early — otherwise CSS/JS/images get redirected to /login and the page renders completely unstyled.
 - **shadcn/ui asChild not supported:** This version uses base-ui primitives. Apply className directly on `DropdownMenuTrigger`, `SheetTrigger`, `TooltipTrigger`, etc. Use `<Link className={buttonVariants()}>` instead of `<Button asChild><Link>`.
-- **Brand colors as CSS vars:** Available as `--color-golden`, `--color-sunset`, `--color-sage`, `--color-coral`, `--color-warm-white` and brown scale `--color-brown-{50..950}`. Tailwind tokens: `bg-golden`, `text-sunset`, etc.
-- **Tailwind opacity variants:** Use `bg-golden/20` etc. — these work without any explicit opacity config in Tailwind v4.
+- **Brand colors as CSS vars:** `--color-fire` (`#E55A3A`), `--color-gold` (`#F0A830`), `--color-cream` (`#F5EDD0`), `--color-sage`, `--color-coral`. Surface scale: `--color-surface-{0..4}` = `#080808` / `#0F0F0F` / `#141414` / `#1C1C1C` / `#242424`. Tailwind tokens: `bg-fire`, `text-gold`, `from-fire`, `to-cream`, `bg-surface-2`, etc.
+- **Tailwind opacity variants:** Use `bg-fire/20` etc. — these work without any explicit opacity config in Tailwind v4.
+- **SVG brand components:** `<Emblem>` and `<Logo>` live in `src/components/brand/`. Both are React client components using `useId()` to generate unique gradient/clipPath IDs — required to prevent SVG ID collisions when rendered multiple times on a page. The `useId()` value contains `:` characters which are invalid in XML IDs; strip with `.replace(/:/g, "")`.
+- **Brand asset static files:** `public/brand/emblem.svg` and `public/brand/logo-full.svg` are transparent-background SVGs for use in emails/embeds. The original Figma exports had a dark `<rect class="cls-2" fill="#111"/>` background — this was stripped so the clipPath+gradient approach renders on any background.
+- **Figma MCP screenshot rate limit:** View-seat accounts hit tool call limits on `get_screenshot`. Fall back to Chrome DevTools MCP (`mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot`) for visual verification.
 - **User ID strategy:** Prisma User.id = Supabase auth.users UUID. Set explicitly on creation, not auto-generated. This means no separate supabaseId field needed.
 - **Supabase email confirmation:** Disabled for dev (Auth → Providers → Email → "Confirm email" off). Re-enable for production.
 - **Testing UI:** Always use Chrome DevTools MCP (`mcp__plugin_chrome-devtools-mcp_chrome-devtools__*`) to take a screenshot and visually verify before asking the user to test.

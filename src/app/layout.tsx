@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Epilogue, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const epilogue = Epilogue({
   variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-const inter = Inter({
+const dmSans = DM_Sans({
   variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -25,6 +27,12 @@ export const metadata: Metadata = {
   title: "Friday — Client Portal for Freelance Designers",
   description:
     "A branded client portal for freelance designers. Design review, invoicing, and file delivery in one calm space.",
+  icons: {
+    icon: [
+      { url: "/brand/emblem.svg", type: "image/svg+xml" },
+    ],
+    apple: "/brand/emblem.svg",
+  },
 };
 
 export default function RootLayout({
@@ -35,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${epilogue.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider>{children}</TooltipProvider>
