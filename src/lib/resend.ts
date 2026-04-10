@@ -10,3 +10,44 @@ export function getResend(): Resend {
   }
   return _resend;
 }
+
+type SendEmailOptions = {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+  replyTo?: string;
+};
+
+type SendEmailResult =
+  | { success: true; id: string }
+  | { success: false; error: string };
+
+export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  const from =
+    options.from ?? process.env.RESEND_FROM_EMAIL ?? "Friday <hello@itsfriday.dev>";
+
+  try {
+    const resend = getResend();
+    const { data, error } = await resend.emails.send({
+      from,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+      replyTo: options.replyTo,
+    });
+
+    if (error) {
+      console.error("[sendEmail] Resend error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: data!.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[sendEmail] unexpected error:", message);
+    return { success: false, error: message };
+  }
+}
