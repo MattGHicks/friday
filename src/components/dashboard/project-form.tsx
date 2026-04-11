@@ -18,7 +18,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { LayoutTemplate } from "lucide-react";
 import type { Client, Project, ProjectStatus } from "@/generated/prisma/client";
+import type { ProjectTemplate } from "@/app/(dashboard)/projects/template-actions";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "ACTIVE", label: "Active" },
@@ -48,12 +50,14 @@ export function ProjectFormSheet({
   project,
   clients,
   defaultClientId,
+  templates = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project?: Project | null;
   clients: Pick<Client, "id" | "name">[];
   defaultClientId?: string;
+  templates?: Pick<ProjectTemplate, "id" | "name">[];
 }) {
   const isEdit = !!project;
   const action = isEdit ? updateProject : createProject;
@@ -68,11 +72,13 @@ export function ProjectFormSheet({
   const [clientId, setClientId] = useState(
     project?.clientId ?? defaultClientId ?? clients[0]?.id ?? ""
   );
+  const [templateId, setTemplateId] = useState("");
 
   // Reset when project changes
   useEffect(() => {
     setStatus(project?.status ?? "ACTIVE");
     setClientId(project?.clientId ?? defaultClientId ?? clients[0]?.id ?? "");
+    setTemplateId("");
   }, [project, defaultClientId, clients]);
 
   // Close on success
@@ -104,6 +110,7 @@ export function ProjectFormSheet({
           {isEdit && <input type="hidden" name="projectId" value={project.id} />}
           <input type="hidden" name="clientId" value={clientId} />
           <input type="hidden" name="status" value={status} />
+          {!isEdit && templateId && <input type="hidden" name="templateId" value={templateId} />}
 
           {state.error && (
             <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -121,6 +128,30 @@ export function ProjectFormSheet({
               defaultValue={project?.name ?? ""}
             />
           </div>
+
+          {/* Template picker — only shown when creating a new project and templates exist */}
+          {!isEdit && templates.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="proj-template">
+                <LayoutTemplate className="inline h-3.5 w-3.5 mr-1.5 opacity-60" strokeWidth={1.5} />
+                Start from template{" "}
+                <span className="font-normal text-muted-foreground">(optional)</span>
+              </Label>
+              <select
+                id="proj-template"
+                value={templateId}
+                onChange={(e) => setTemplateId(e.target.value)}
+                className="flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm text-foreground transition-colors outline-none focus:border-ring focus:ring-3 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="" className="bg-popover">Blank project (default columns)</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id} className="bg-popover">
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Client picker — only shown when not locked to a specific client */}
           {!defaultClientId && !isEdit && (
