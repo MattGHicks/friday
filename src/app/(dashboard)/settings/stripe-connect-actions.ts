@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 /**
  * Generates a Stripe Connect OAuth URL and redirects the user to Stripe
@@ -21,7 +21,7 @@ export async function connectStripe(): Promise<never> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const redirectUri = `${appUrl}/api/stripe/connect/callback`;
 
-  const authorizeUrl = stripe.oauth.authorizeUrl({
+  const authorizeUrl = getStripe()!.oauth.authorizeUrl({
     client_id: clientId,
     response_type: "code",
     scope: "read_write",
@@ -55,7 +55,7 @@ export async function disconnectStripe(): Promise<{ success: boolean; error?: st
   try {
     // Deauthorize the connected account from our platform
     if (clientId) {
-      await stripe.oauth.deauthorize({
+      await getStripe()!.oauth.deauthorize({
         client_id: clientId,
         stripe_user_id: dbUser.stripeAccountId,
       });

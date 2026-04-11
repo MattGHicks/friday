@@ -15,6 +15,11 @@ Run this at the **very start** of every heartbeat, before reading any files or s
 
 ## Procedure
 
+0. Ensure git can access this repo (required in the Docker container):
+   ```bash
+   git config --global --add safe.directory /home/matt/projects/friday 2>/dev/null
+   ```
+
 1. Pull latest from main:
    ```bash
    cd /home/matt/projects/friday && git pull origin main --ff-only 2>&1

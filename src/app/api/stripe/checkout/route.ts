@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
 type LineItem = {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   const lineItems = invoice.lineItems as LineItem[];
 
   try {
-    const session = await stripe.checkout.sessions.create(
+    const session = await getStripe()!.checkout.sessions.create(
       {
         mode: "payment",
         customer_email: invoice.client.email,

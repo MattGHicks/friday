@@ -2,10 +2,13 @@ import { Resend } from "resend";
 
 let _resend: Resend | null = null;
 
-export function getResend(): Resend {
+export function getResend(): Resend | null {
   if (!_resend) {
     const key = process.env.RESEND_API_KEY;
-    if (!key) throw new Error("RESEND_API_KEY is not set");
+    if (!key) {
+      console.warn("RESEND_API_KEY is not set — email features disabled");
+      return null;
+    }
     _resend = new Resend(key);
   }
   return _resend;
@@ -30,6 +33,10 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
   try {
     const resend = getResend();
+    if (!resend) {
+      console.warn("[sendEmail] Resend not configured — skipping email");
+      return { success: false, error: "Resend not configured" };
+    }
     const { data, error } = await resend.emails.send({
       from,
       to: options.to,

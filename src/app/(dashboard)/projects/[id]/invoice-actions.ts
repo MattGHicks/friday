@@ -167,6 +167,9 @@ export async function updateInvoiceStatus(
       });
 
       const resend = getResend();
+      if (!resend) {
+        console.warn("[invoice-sent-email] Resend not configured — skipping");
+      } else {
       await resend.emails.send({
         from: "Friday <invoices@itsfriday.dev>",
         to: invoice.client.email,
@@ -174,6 +177,7 @@ export async function updateInvoiceStatus(
         html,
         text,
       });
+      }
     } catch (err) {
       // Email failure must never block the invoice status update
       console.error("[invoice-sent-email] failed to send:", err);

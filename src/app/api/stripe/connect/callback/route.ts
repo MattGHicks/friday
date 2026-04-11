@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokenResponse = await stripe.oauth.token({
+    const tokenResponse = await getStripe()!.oauth.token({
       grant_type: "authorization_code",
       code,
     });
