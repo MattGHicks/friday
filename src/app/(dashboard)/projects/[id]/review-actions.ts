@@ -97,9 +97,15 @@ export async function addReply(
 
   const parent = await prisma.annotation.findFirst({
     where: { id: parentId },
-    include: {
+    select: {
+      id: true,
+      reviewId: true,
       review: {
-        include: { project: { select: { id: true, userId: true } } },
+        select: {
+          id: true,
+          fileId: true,
+          project: { select: { id: true, userId: true } },
+        },
       },
     },
   });
@@ -134,9 +140,15 @@ export async function toggleAnnotationResolved(
 
   const annotation = await prisma.annotation.findFirst({
     where: { id: annotationId },
-    include: {
+    select: {
+      id: true,
+      isResolved: true,
       review: {
-        include: { project: { select: { id: true, userId: true } } },
+        select: {
+          id: true,
+          fileId: true,
+          project: { select: { id: true, userId: true } },
+        },
       },
     },
   });
