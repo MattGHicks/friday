@@ -43,17 +43,34 @@ Build passes. Please push to origin and create a PR.
 ### Step 5: STOP
 You are done. Do not merge. Do not push to main. Do not mark as done.
 
-## What Happens Next (not your job)
+## What the Release Engineer Does
 
-1. Release Engineer pushes the branch to GitHub
-2. Release Engineer creates a PR via `gh pr create`
-3. Vercel automatically builds a preview deploy for the PR
-4. Release Engineer comments the PR link and preview URL on the Paperclip ticket
-5. The human board operator tests the preview URL
-6. The human merges the PR on GitHub (or requests changes)
-7. Main auto-deploys to production via Vercel
-8. QA Engineer verifies production
+1. Push the branch to GitHub:
+   ```bash
+   git push origin feature/branch-name
+   ```
+
+2. Create a PR via `gh pr create`
+
+3. Post a comment on the Paperclip ticket with the PR link AND a ready-to-run local test command:
+   ```
+   PR: https://github.com/MattGHicks/friday/pull/XX
+
+   To test locally, run this in your terminal:
+   git fetch origin && git checkout feature/branch-name && npm run dev
+   ```
+   Replace `feature/branch-name` with the actual branch name.
+
+4. Set the ticket to `in_review`. Done — do not merge.
+
+## What the Human Does
+
+1. Copies the command from the ticket, runs it in their terminal
+2. Tests at `http://localhost:3000`
+3. Merges the PR on GitHub (or requests changes)
+4. Main auto-deploys to production via Vercel
+5. QA Engineer verifies production
 
 ## Why This Matters
 
-Every push to main triggers a Vercel production deploy. The human MUST review changes before they go live. The Vercel preview URL on the PR is how they test without affecting production.
+Vercel preview deploys are disabled for feature branches (they waste build minutes and fail on incomplete work). Local testing is instant and free. Only merges to `main` trigger a Vercel deploy.
