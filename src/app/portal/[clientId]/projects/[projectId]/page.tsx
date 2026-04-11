@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
-import type { ProjectStatus, InvoiceStatus } from "@/generated/prisma/client";
+import type { ProjectStatus, InvoiceStatus, ActivityType } from "@/generated/prisma/client";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
@@ -51,22 +51,43 @@ export default async function ClientProjectPage({
 }) {
   const { clientId, projectId } = await params;
 
+  const CLIENT_ACTIVITY_TYPES: ActivityType[] = [
+    "FILE_UPLOADED",
+    "DELIVERABLE_MARKED",
+    "INVOICE_SENT",
+    "INVOICE_PAID",
+    "REVIEW_APPROVED",
+    "REVIEW_CHANGES_REQUESTED",
+    "STATUS_CHANGED",
+  ];
+
   // Verify the project belongs to this client
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, clientId },
-    include: {
-      client: { select: { id: true, name: true } },
-      columns: {
-        orderBy: { position: "asc" },
-        include: { cards: { orderBy: { position: "asc" } } },
+  const [project, activities] = await Promise.all([
+    prisma.project.findFirst({
+      where: { id: projectId, clientId },
+      include: {
+        client: { select: { id: true, name: true } },
+        columns: {
+          orderBy: { position: "asc" },
+          include: { cards: { orderBy: { position: "asc" } } },
+        },
+        files: { orderBy: { createdAt: "desc" } },
+        invoices: {
+          where: { status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] } },
+          orderBy: { createdAt: "desc" },
+        },
       },
-      files: { orderBy: { createdAt: "desc" } },
-      invoices: {
-        where: { status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] } },
-        orderBy: { createdAt: "desc" },
+    }),
+    prisma.activity.findMany({
+      where: {
+        projectId,
+        action: { in: CLIENT_ACTIVITY_TYPES },
       },
-    },
-  });
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, action: true, metadata: true, createdAt: true },
+    }),
+  ]);
 
   if (!project) notFound();
 
@@ -221,6 +242,66 @@ export default async function ClientProjectPage({
                   </a>
                 </div>
               ))}
+          </div>
+        </section>
+      )}
+
+      {/* Activity feed */}
+      {activities.length > 0 && (
+        <section>
+          <h2 className="mb-4 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Recent activity
+          </h2>
+          <div className="relative border-l-2 border-border/30 pl-6 flex flex-col gap-5">
+            {activities.map((activity) => {
+              const meta = activity.metadata as Record<string, unknown> | null;
+              let label = "";
+              let detail: string | undefined;
+
+              switch (activity.action) {
+                case "FILE_UPLOADED":
+                  label = "File uploaded";
+                  detail = meta?.fileName as string | undefined;
+                  break;
+                case "DELIVERABLE_MARKED":
+                  label = "Deliverable added";
+                  detail = meta?.fileName as string | undefined;
+                  break;
+                case "INVOICE_SENT":
+                  label = "Invoice sent";
+                  break;
+                case "INVOICE_PAID":
+                  label = "Invoice paid";
+                  break;
+                case "REVIEW_APPROVED":
+                  label = "Design approved";
+                  break;
+                case "REVIEW_CHANGES_REQUESTED":
+                  label = "Changes requested on design";
+                  break;
+                case "STATUS_CHANGED":
+                  label = "Project status updated";
+                  detail = meta?.newStatus as string | undefined;
+                  break;
+              }
+
+              return (
+                <div key={activity.id} className="relative">
+                  <span className="absolute -left-[1.8125rem] top-1 h-2 w-2 rounded-full bg-golden/50" />
+                  <p className="text-sm text-foreground leading-snug">
+                    {label}
+                    {detail && (
+                      <span className="ml-1.5 font-mono text-xs text-muted-foreground">
+                        {detail}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
