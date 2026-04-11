@@ -198,7 +198,7 @@ export function CalendarClient({
 
       {/* ── Body ───────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col px-6 md:px-10 py-6 min-h-0">
-        <div className="flex gap-6 flex-1 min-h-0">
+        <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
         {/* ── Calendar grid ──────────────────────────────────────── */}
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Day headers */}
@@ -308,7 +308,7 @@ export function CalendarClient({
 
         {/* ── Side panel — selected day detail ─────────────────── */}
         {selectedDay && (
-          <div className="w-64 shrink-0 rounded-xl border border-white/[0.06] bg-surface-2 p-4 animate-fade-in-scale self-start sticky top-0">
+          <div className="w-full md:w-64 md:shrink-0 rounded-xl border border-white/[0.06] bg-surface-2 p-4 animate-fade-in-scale md:self-start md:sticky md:top-0">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-cream/35">
