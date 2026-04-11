@@ -19,7 +19,7 @@ Run this at the **very start** of every heartbeat, before reading any files or s
    ```bash
    git config --global --add safe.directory /home/matt/projects/friday 2>/dev/null
    git config user.name "Matt Hicks" 2>/dev/null
-   git config user.email "35682982+MattGHicks@users.noreply.github.com" 2>/dev/null
+   git config user.email "7120443+MattGHicks@users.noreply.github.com" 2>/dev/null
    ```
    NEVER change git user.name or user.email to your agent name. All commits must be authored by Matt Hicks so Vercel deploys succeed.
 
