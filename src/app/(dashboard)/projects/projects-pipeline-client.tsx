@@ -139,7 +139,7 @@ function StageColumn({
   projects: ProjectWithExtras[];
 }) {
   return (
-    <div className="flex flex-col min-w-0 h-full">
+    <div className="flex flex-col w-[85vw] sm:w-60 shrink-0 h-full snap-start snap-always">
       {/* Column header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
@@ -353,17 +353,14 @@ export function ProjectsPipelineClient({
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 md:px-10 py-6 min-h-0">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 md:px-10 py-6 min-h-0 snap-x snap-mandatory scroll-smooth">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div
-              className="grid gap-3 h-full pb-4"
-              style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(240px, 1fr))` }}
-            >
+            <div className="flex gap-3 h-full pb-4">
               {stages.map((stage) => (
                 <StageColumn
                   key={stage.id}
