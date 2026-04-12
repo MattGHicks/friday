@@ -28,7 +28,7 @@ function formatBytes(bytes: number): string {
 
 function FileTypeIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.startsWith("image/")) {
-    return <Image className="h-5 w-5 shrink-0 text-golden" strokeWidth={1.5} />;
+    return <Image className="h-5 w-5 shrink-0 text-gold" strokeWidth={1.5} />;
   }
   if (
     mimeType === "application/pdf" ||
@@ -50,7 +50,7 @@ function DropZoneContent() {
   if (pending) {
     return (
       <>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-golden/30 border-t-golden" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
         <p className="text-sm text-muted-foreground">Uploading…</p>
       </>
     );
@@ -58,8 +58,8 @@ function DropZoneContent() {
 
   return (
     <>
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-golden/10">
-        <Upload className="h-5 w-5 text-golden" strokeWidth={1.5} />
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
+        <Upload className="h-5 w-5 text-gold" strokeWidth={1.5} />
       </div>
       <div>
         <p className="text-sm font-medium">Drop files here or click to upload</p>
@@ -160,7 +160,7 @@ export function FilesPanel({
           onKeyDown={(e) => e.key === "Enter" && handleDropZoneClick()}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 px-6 py-8 text-center transition-colors duration-200 hover:border-golden/40 hover:bg-golden/5"
+          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 px-6 py-8 text-center transition-colors duration-200 hover:border-gold/40 hover:bg-gold/5"
         >
           <DropZoneContent />
         </div>
@@ -170,8 +170,8 @@ export function FilesPanel({
       {files.length === 0 ? (
         <Card className="border-border/40">
           <CardContent className="flex flex-col items-center py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-golden/10">
-              <Upload className="h-6 w-6 text-golden" strokeWidth={1.5} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
+              <Upload className="h-6 w-6 text-gold" strokeWidth={1.5} />
             </div>
             <h3 className="mt-4 font-heading text-base font-semibold">No files yet</h3>
             <p className="mt-1 max-w-xs text-sm text-muted-foreground">
@@ -216,8 +216,8 @@ export function FilesPanel({
                     size="icon"
                     className={`h-8 w-8 transition-colors ${
                       file.isDeliverable
-                        ? "text-golden hover:text-golden/70"
-                        : "text-muted-foreground hover:text-golden"
+                        ? "text-gold hover:text-gold/70"
+                        : "text-muted-foreground hover:text-gold"
                     }`}
                     onClick={() => handleToggleDeliverable(file.id)}
                     disabled={togglingId === file.id}
@@ -241,7 +241,7 @@ export function FilesPanel({
                       href={`/projects/${projectId}/review/${file.id}`}
                       className={
                         buttonVariants({ variant: "ghost", size: "icon" }) +
-                        " h-8 w-8 text-muted-foreground hover:text-golden"
+                        " h-8 w-8 text-muted-foreground hover:text-gold"
                       }
                       title="Open review"
                     >

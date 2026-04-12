@@ -88,7 +88,7 @@ function KanbanCard({
       ref={setNodeRef}
       style={style}
       className={`group relative rounded-lg border border-border/40 bg-card p-3 shadow-sm transition-shadow duration-150 ${
-        isDragging ? "shadow-lg ring-1 ring-golden/30" : "hover:shadow-md"
+        isDragging ? "shadow-lg ring-1 ring-gold/30" : "hover:shadow-md"
       }`}
     >
       <div className="flex items-start gap-2">
@@ -210,7 +210,7 @@ function EditCardForm({
   }
 
   return (
-    <div className="rounded-lg border border-golden/30 bg-card p-3 shadow-md">
+    <div className="rounded-lg border border-gold/30 bg-card p-3 shadow-md">
       <form onSubmit={handleSubmit} className="space-y-2">
         <input
           autoFocus
@@ -416,8 +416,8 @@ function EmptyBoard({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-golden/10">
-        <LayoutGrid className="h-7 w-7 text-golden" strokeWidth={1.5} />
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gold/10">
+        <LayoutGrid className="h-7 w-7 text-gold" strokeWidth={1.5} />
       </div>
       <h3 className="mt-4 font-heading text-base font-semibold">No columns yet</h3>
       <p className="mt-1 max-w-xs text-sm text-muted-foreground">

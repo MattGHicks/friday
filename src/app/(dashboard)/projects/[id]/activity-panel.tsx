@@ -60,7 +60,7 @@ export function ActivityPanel({ activities }: ActivityPanelProps) {
         return (
           <div key={activity.id} className="relative">
             {/* Timeline dot */}
-            <span className="absolute -left-[1.8125rem] top-1 w-2 h-2 rounded-full bg-golden/50" />
+            <span className="absolute -left-[1.8125rem] top-1 w-2 h-2 rounded-full bg-gold/50" />
 
             <div className="flex flex-col gap-0.5">
               <p className="text-sm text-foreground leading-snug">

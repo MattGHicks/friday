@@ -14,25 +14,26 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import type { ProjectStatus, InvoiceStatus, ActivityType } from "@/generated/prisma/client";
+import { PayInvoiceButton } from "./pay-invoice-button";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
-  ON_HOLD: { label: "On hold", className: "bg-golden/20 text-golden border-golden/30" },
+  ON_HOLD: { label: "On hold", className: "bg-gold/20 text-gold border-gold/30" },
   COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30" },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50" },
 };
 
 const INVOICE_STATUS: Record<InvoiceStatus, { label: string; className: string }> = {
   DRAFT: { label: "Draft", className: "bg-muted/50 text-muted-foreground border-border/50" },
-  SENT: { label: "Sent", className: "bg-golden/20 text-golden border-golden/30" },
-  VIEWED: { label: "Viewed", className: "bg-golden/10 text-golden/70 border-golden/20" },
+  SENT: { label: "Sent", className: "bg-gold/20 text-gold border-gold/30" },
+  VIEWED: { label: "Viewed", className: "bg-gold/10 text-gold/70 border-gold/20" },
   PAID: { label: "Paid", className: "bg-sage/20 text-sage border-sage/30" },
   OVERDUE: { label: "Overdue", className: "bg-coral/20 text-coral border-coral/30" },
 };
 
 function FileTypeIcon({ mimeType }: { mimeType: string }) {
   if (mimeType.startsWith("image/"))
-    return <ImageIcon className="h-4 w-4 shrink-0 text-golden" strokeWidth={1.5} />;
+    return <ImageIcon className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.5} />;
   if (mimeType === "application/pdf" || mimeType.startsWith("text/") || mimeType.includes("document"))
     return <FileText className="h-4 w-4 shrink-0 text-sunset" strokeWidth={1.5} />;
   return <File className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />;
@@ -142,7 +143,7 @@ export default async function ClientProjectPage({
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {column.name}
                   </span>
-                  <span className="rounded-full bg-golden/10 px-1.5 py-0.5 text-[11px] font-medium text-golden">
+                  <span className="rounded-full bg-gold/10 px-1.5 py-0.5 text-[11px] font-medium text-gold">
                     {column.cards.length}
                   </span>
                 </div>
@@ -195,7 +196,7 @@ export default async function ClientProjectPage({
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-golden/10 hover:text-golden"
+                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-gold/10 hover:text-gold"
                 >
                   <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
                   Download
@@ -235,7 +236,7 @@ export default async function ClientProjectPage({
                     download
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-golden/10 hover:text-golden"
+                    className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-gold/10 hover:text-gold"
                   >
                     <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
                     Download
@@ -321,7 +322,7 @@ export default async function ClientProjectPage({
                   <CardContent className="p-4">
                     {/* Invoice header */}
                     <div className="flex items-center gap-3">
-                      <FileText className="h-4 w-4 shrink-0 text-golden" strokeWidth={1.5} />
+                      <FileText className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.5} />
                       <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                         #{inv.id.slice(0, 8).toUpperCase()}
                       </span>
@@ -367,6 +368,9 @@ export default async function ClientProjectPage({
                       <p className="mt-2 text-xs text-muted-foreground/70 border-t border-border/20 pt-2">
                         {inv.notes}
                       </p>
+                    )}
+                    {["SENT", "VIEWED", "OVERDUE"].includes(inv.status) && (
+                      <PayInvoiceButton invoiceId={inv.id} clientId={clientId} />
                     )}
                   </CardContent>
                 </Card>

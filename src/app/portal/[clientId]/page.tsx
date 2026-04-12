@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { FolderKanban, FileText, CheckCircle2, Clock, PauseCircle } from "lucide-react";
+import { FolderKanban, FileText, CheckCircle2, Clock, PauseCircle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
@@ -9,25 +9,29 @@ import type { ProjectStatus, InvoiceStatus } from "@/generated/prisma/client";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string; icon: React.FC<{ className?: string; strokeWidth?: number }> }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30", icon: Clock },
-  ON_HOLD: { label: "On hold", className: "bg-golden/20 text-golden border-golden/30", icon: PauseCircle },
+  ON_HOLD: { label: "On hold", className: "bg-gold/20 text-gold border-gold/30", icon: PauseCircle },
   COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30", icon: CheckCircle2 },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50", icon: FolderKanban },
 };
 
 const INVOICE_STATUS: Record<InvoiceStatus, { label: string; className: string }> = {
   DRAFT: { label: "Draft", className: "bg-muted/50 text-muted-foreground border-border/50" },
-  SENT: { label: "Invoice sent", className: "bg-golden/20 text-golden border-golden/30" },
-  VIEWED: { label: "Viewed", className: "bg-golden/10 text-golden/70 border-golden/20" },
+  SENT: { label: "Invoice sent", className: "bg-gold/20 text-gold border-gold/30" },
+  VIEWED: { label: "Viewed", className: "bg-gold/10 text-gold/70 border-gold/20" },
   PAID: { label: "Paid", className: "bg-sage/20 text-sage border-sage/30" },
   OVERDUE: { label: "Overdue", className: "bg-coral/20 text-coral border-coral/30" },
 };
 
 export default async function ClientPortalPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ clientId: string }>;
+  searchParams: Promise<{ payment?: string }>;
 }) {
   const { clientId } = await params;
+  const { payment } = await searchParams;
+  const paymentSuccess = payment === "success";
 
   const client = await prisma.client.findUnique({
     where: { id: clientId },
@@ -56,6 +60,16 @@ export default async function ClientPortalPage({
 
   return (
     <div className="space-y-8">
+      {/* Payment success banner */}
+      {paymentSuccess && (
+        <div className="flex items-center gap-3 rounded-lg border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-sage">
+          <CheckCircle className="h-5 w-5 shrink-0" strokeWidth={1.5} />
+          <div>
+            <span className="font-medium">Payment received.</span>{" "}
+            <span className="text-sage/80">Your invoice has been paid. Thank you!</span>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
@@ -75,8 +89,8 @@ export default async function ClientPortalPage({
       {client.projects.length === 0 ? (
         <Card className="border-dashed border-border/40">
           <CardContent className="flex flex-col items-center py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-golden/10">
-              <FolderKanban className="h-6 w-6 text-golden" strokeWidth={1.5} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
+              <FolderKanban className="h-6 w-6 text-gold" strokeWidth={1.5} />
             </div>
             <h2 className="mt-4 font-heading text-base font-semibold">No active projects</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -98,7 +112,7 @@ export default async function ClientPortalPage({
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/portal/${clientId}/projects/${project.id}`}
-                        className="font-heading text-base font-semibold hover:text-golden transition-colors duration-150"
+                        className="font-heading text-base font-semibold hover:text-gold transition-colors duration-150"
                       >
                         {project.name}
                       </Link>
@@ -157,7 +171,7 @@ export default async function ClientPortalPage({
                   <div className="mt-4">
                     <Link
                       href={`/portal/${clientId}/projects/${project.id}`}
-                      className="text-xs text-muted-foreground underline-offset-2 hover:text-golden hover:underline transition-colors duration-150"
+                      className="text-xs text-muted-foreground underline-offset-2 hover:text-gold hover:underline transition-colors duration-150"
                     >
                       View project details →
                     </Link>

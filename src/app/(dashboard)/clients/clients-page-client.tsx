@@ -87,8 +87,8 @@ export function ClientsPageClient({
       {clients.length === 0 ? (
         <Card className="border-dashed border-border/60">
           <CardContent className="flex flex-col items-center py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-golden/10">
-              <Users className="h-7 w-7 text-golden" strokeWidth={1.5} />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gold/10">
+              <Users className="h-7 w-7 text-gold" strokeWidth={1.5} />
             </div>
             <h2 className="mt-4 font-heading text-lg font-semibold">
               No clients yet
