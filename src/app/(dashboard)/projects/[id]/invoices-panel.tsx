@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, Trash2, FileText, Send, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, FileText, Send, CheckCircle2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -442,6 +442,15 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
           strokeWidth={1.5}
         />
       )}
+      <a
+        href={`/api/invoices/${invoice.id}/pdf`}
+        download
+        className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+        title="Download PDF"
+      >
+        <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <span>PDF</span>
+      </a>
     </div>
   );
 }
@@ -468,7 +477,7 @@ export function InvoicesPanel({
     .reduce((sum, inv) => sum + inv.total, 0);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="animate-fade-up flex flex-col gap-4">
       {/* Summary row — only when there are invoices */}
       {invoices.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
