@@ -9,7 +9,6 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Building2,
   Phone,
   Mail,
   Link2,
@@ -17,6 +16,9 @@ import {
   Star,
   Users,
   UserPlus,
+  DollarSign,
+  TrendingUp,
+  Clock,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { ContactFormSheet } from "@/components/dashboard/contact-form";
+import type { ProjectTemplate } from "@/app/(dashboard)/projects/template-actions";
 import { deleteProject } from "@/app/(dashboard)/projects/actions";
 import {
   deleteContact,
@@ -350,14 +353,27 @@ function ProjectCard({
 
 /* ── Main component ───────────────────────────────────────── */
 
+function formatCents(cents: number): string {
+  if (cents === 0) return "$0";
+  const dollars = cents / 100;
+  if (dollars >= 1000) {
+    return `$${(dollars / 1000).toFixed(dollars % 1000 === 0 ? 0 : 1)}k`;
+  }
+  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
 export function ClientDetailClient({
   client,
   contacts,
   projects,
+  invoiceStats,
+  templates = [],
 }: {
   client: Client;
   contacts: Contact[];
   projects: Project[];
+  invoiceStats: { totalInvoiced: number; outstandingAmount: number; paidAmount: number };
+  templates?: Pick<ProjectTemplate, "id" | "name">[];
 }) {
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -455,6 +471,46 @@ export function ClientDetailClient({
           )}
           {copied ? "Copied!" : "Copy portal link"}
         </Button>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-border/40 bg-surface-2/60 px-4 py-3.5">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <FolderKanban className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <span className="text-[11px] font-medium uppercase tracking-wide">Projects</span>
+          </div>
+          <p className="font-display text-2xl font-bold tabular-nums">{projects.length}</p>
+        </div>
+        <div className="rounded-xl border border-border/40 bg-surface-2/60 px-4 py-3.5">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TrendingUp className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <span className="text-[11px] font-medium uppercase tracking-wide">Invoiced</span>
+          </div>
+          <p className="font-display text-2xl font-bold tabular-nums text-gradient-brand">
+            {formatCents(invoiceStats.totalInvoiced)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/40 bg-surface-2/60 px-4 py-3.5">
+          <div className="flex items-center gap-2 mb-1">
+            {invoiceStats.outstandingAmount > 0 ? (
+              <>
+                <Clock className="h-3.5 w-3.5 text-gold" strokeWidth={1.5} />
+                <span className="text-[11px] font-medium uppercase tracking-wide text-gold/70">Outstanding</span>
+              </>
+            ) : (
+              <>
+                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Paid</span>
+              </>
+            )}
+          </div>
+          <p className={`font-display text-2xl font-bold tabular-nums ${invoiceStats.outstandingAmount > 0 ? "text-gold" : "text-foreground"}`}>
+            {invoiceStats.outstandingAmount > 0
+              ? formatCents(invoiceStats.outstandingAmount)
+              : formatCents(invoiceStats.paidAmount)}
+          </p>
+        </div>
       </div>
 
       {/* Notes */}
@@ -585,6 +641,7 @@ export function ClientDetailClient({
         project={editingProject}
         clients={[{ id: client.id, name: client.name }]}
         defaultClientId={client.id}
+        templates={editingProject ? [] : templates}
       />
 
       <ContactFormSheet

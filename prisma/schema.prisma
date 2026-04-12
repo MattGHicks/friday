@@ -23,13 +23,14 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  clients        Client[]
-  projects       Project[]
-  invoices       Invoice[]
-  contracts      Contract[]
-  notifications  Notification[]
-  pipelineStages PipelineStage[]
-  meetings       Meeting[]
+  clients          Client[]
+  projects         Project[]
+  invoices         Invoice[]
+  contracts        Contract[]
+  notifications    Notification[]
+  pipelineStages   PipelineStage[]
+  meetings         Meeting[]
+  projectTemplates ProjectTemplate[]
 
   @@map("users")
 }
@@ -345,6 +346,7 @@ model Notification {
   clientId  String?
   type      NotificationType
   message   String
+  link      String?          // URL to navigate to when clicked
   readAt    DateTime?
   createdAt DateTime         @default(now())
 
@@ -363,6 +365,21 @@ enum NotificationType {
   INVOICE_PAID
   CONTRACT_SIGNED
   MESSAGE_RECEIVED
+}
+
+// ── Project Templates ────────────────────────────────────────
+
+model ProjectTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  structure Json     // { columns: [{ name, position, cards: [{ title, position }] }] }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("project_templates")
 }
 
 // ── Meetings ──────────────────────────────────────────────────

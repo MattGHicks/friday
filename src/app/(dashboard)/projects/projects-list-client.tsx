@@ -17,6 +17,7 @@ import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { format, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { PipelineStage, Project, Client } from "@/generated/prisma/client";
+import type { ProjectTemplate } from "@/app/(dashboard)/projects/template-actions";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -79,10 +80,12 @@ export function ProjectsListClient({
   projects: initialProjects,
   stages,
   clients,
+  templates = [],
 }: {
   projects: ProjectWithExtras[];
   stages: PipelineStage[];
   clients: Pick<Client, "id" | "name">[];
+  templates?: Pick<ProjectTemplate, "id" | "name">[];
 }) {
   const [search, setSearch]           = useState("");
   const [stageFilter, setStageFilter] = useState("all");
@@ -324,6 +327,7 @@ export function ProjectsListClient({
         onOpenChange={setFormOpen}
         project={null}
         clients={clients}
+        templates={templates}
       />
     </div>
   );

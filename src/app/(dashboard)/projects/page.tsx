@@ -6,7 +6,7 @@ export default async function ProjectsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [stages, projects, clients] = await Promise.all([
+  const [stages, projects, clients, templates] = await Promise.all([
     prisma.pipelineStage.findMany({
       where: { userId: user.id },
       orderBy: { position: "asc" },
@@ -25,6 +25,11 @@ export default async function ProjectsPage() {
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    prisma.projectTemplate.findMany({
+      where: { userId: user.id },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return (
@@ -32,6 +37,7 @@ export default async function ProjectsPage() {
       projects={projects}
       stages={stages}
       clients={clients}
+      templates={templates}
     />
   );
 }
