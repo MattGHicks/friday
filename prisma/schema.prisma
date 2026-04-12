@@ -83,6 +83,7 @@ model Contact {
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@index([clientId])
   @@map("contacts")
 }
 
@@ -153,6 +154,7 @@ model Column {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   cards   Card[]
 
+  @@index([projectId])
   @@map("columns")
 }
 
@@ -169,6 +171,8 @@ model Card {
 
   column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
 
+  @@index([columnId])
+  @@index([projectId])
   @@map("cards")
 }
 
@@ -190,6 +194,7 @@ model File {
   project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reviews Review[]
 
+  @@index([projectId])
   @@map("files")
 }
 
@@ -207,6 +212,7 @@ model Review {
   file        File         @relation(fields: [fileId], references: [id], onDelete: Cascade)
   annotations Annotation[]
 
+  @@index([fileId])
   @@map("reviews")
 }
 
@@ -232,6 +238,7 @@ model Annotation {
   parent  Annotation? @relation("AnnotationThread", fields: [parentId], references: [id])
   replies Annotation[] @relation("AnnotationThread")
 
+  @@index([reviewId])
   @@map("annotations")
 }
 
@@ -258,6 +265,8 @@ model Invoice {
   client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, status])
+  @@index([projectId])
   @@map("invoices")
 }
 
@@ -272,23 +281,30 @@ enum InvoiceStatus {
 // ── Contracts & Proposals ────────────────────────────────────
 
 model Contract {
-  id         String    @id @default(cuid())
+  id         String         @id @default(cuid())
   projectId  String
   clientId   String
   userId     String
   title      String
-  content    String    // rich text / markdown
+  content    String         // rich text / markdown
+  status     ContractStatus @default(DRAFT)
   signedAt   DateTime?
   signerName String?
   signerIp   String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("contracts")
+}
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  SIGNED
 }
 
 // ── Messaging ────────────────────────────────────────────────
@@ -319,6 +335,7 @@ model Activity {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("activities")
 }
 

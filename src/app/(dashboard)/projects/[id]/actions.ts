@@ -119,7 +119,10 @@ export async function updateCard(
 
   const card = await prisma.card.findFirst({
     where: { id: cardId },
-    include: { column: { include: { project: { select: { userId: true, id: true } } } } },
+    select: {
+      id: true,
+      column: { select: { project: { select: { id: true, userId: true } } } },
+    },
   });
   if (!card || card.column.project.userId !== user.id) return { error: "Not found" };
 
@@ -145,7 +148,10 @@ export async function deleteCard(cardId: string) {
 
   const card = await prisma.card.findFirst({
     where: { id: cardId },
-    include: { column: { include: { project: { select: { userId: true, id: true } } } } },
+    select: {
+      id: true,
+      column: { select: { project: { select: { id: true, userId: true } } } },
+    },
   });
   if (!card || card.column.project.userId !== user.id) return { error: "Not found" };
 
@@ -167,7 +173,10 @@ export async function moveCard(
 
   const card = await prisma.card.findFirst({
     where: { id: cardId },
-    include: { column: { include: { project: { select: { userId: true, id: true } } } } },
+    select: {
+      id: true,
+      column: { select: { project: { select: { id: true, userId: true } } } },
+    },
   });
   if (!card || card.column.project.userId !== user.id) return { error: "Not found" };
 

@@ -7,6 +7,8 @@ import {
   DollarSign,
   Layers,
   TrendingUp,
+  Users,
+  FolderOpen,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, startOfMonth, endOfDay, addDays } from "date-fns";
 import { QuickActionsBar } from "./quick-actions-bar";
+import { OnboardingChecklist } from "./onboarding-checklist";
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -57,8 +60,11 @@ export default async function DashboardPage() {
     outstandingAgg,
     paidThisMonthAgg,
     overdueInvoices,
+    overdueAgg,
     tasksDueSoon,
     recentActivity,
+    firstFile,
+    firstSentInvoice,
   ] = await Promise.all([
     // Clients (for quick actions + meeting form)
     prisma.client.findMany({
@@ -100,7 +106,7 @@ export default async function DashboardPage() {
       },
       _sum: { total: true },
     }),
-    // Overdue invoices (top 3)
+    // Overdue invoices (top 3 for detail list)
     prisma.invoice.findMany({
       where: { userId: user.id, status: "OVERDUE" },
       include: {
@@ -109,13 +115,22 @@ export default async function DashboardPage() {
       orderBy: { dueDate: "asc" },
       take: 3,
     }),
+    // Overdue total (all overdue, for banner)
+    prisma.invoice.aggregate({
+      where: { userId: user.id, status: "OVERDUE" },
+      _sum: { total: true },
+      _count: true,
+    }),
     // Tasks due in next 7 days (Card.dueDate)
     prisma.card.findMany({
       where: {
         column: { project: { userId: user.id } },
         dueDate: { lte: sevenDaysFromNow, gte: monthStart },
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        dueDate: true,
         column: {
           select: {
             project: { select: { id: true, name: true } },
@@ -125,12 +140,25 @@ export default async function DashboardPage() {
       orderBy: { dueDate: "asc" },
       take: 5,
     }),
-    // Recent activity
+    // Recent activity (last 10)
     prisma.activity.findMany({
       where: { project: { userId: user.id } },
       orderBy: { createdAt: "desc" },
-      take: 6,
+      take: 10,
       include: { project: { select: { id: true, name: true } } },
+    }),
+    // Onboarding: any uploaded file
+    prisma.file.findFirst({
+      where: { project: { userId: user.id } },
+      select: { id: true },
+    }),
+    // Onboarding: any sent/paid invoice
+    prisma.invoice.findFirst({
+      where: {
+        userId: user.id,
+        status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] },
+      },
+      select: { id: true },
     }),
   ]);
 
@@ -142,6 +170,8 @@ export default async function DashboardPage() {
 
   const outstandingCents = outstandingAgg._sum.total ?? 0;
   const paidCents = paidThisMonthAgg._sum.total ?? 0;
+  const overdueTotalCents = overdueAgg._sum.total ?? 0;
+  const overdueCount = overdueAgg._count;
 
   const tasksDueToday = tasksDueSoon.filter(
     (t) => t.dueDate && new Date(t.dueDate) <= todayEnd
@@ -171,8 +201,101 @@ export default async function DashboardPage() {
         <QuickActionsBar clients={clients} projects={projects} />
       </div>
 
-      {/* ── Top widgets row (3 cols) ────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-3 animate-fade-up delay-150">
+      {/* ── Overdue invoice banner ──────────────────────────── */}
+      {overdueCount > 0 && (
+        <div className="animate-fade-up delay-75">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-fire/25 bg-fire/[0.06] px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-fire shrink-0" strokeWidth={1.75} />
+              <span className="text-sm text-cream/90">
+                <span className="font-semibold text-fire">
+                  {overdueCount} {overdueCount === 1 ? "invoice" : "invoices"} overdue
+                </span>
+                <span className="text-cream/50 mx-1.5">·</span>
+                <span className="font-mono font-bold text-cream">
+                  {formatMoney(overdueTotalCents)}
+                </span>
+                <span className="text-cream/50"> outstanding</span>
+              </span>
+            </div>
+            <Link
+              href="/projects"
+              className="shrink-0 text-xs text-fire/80 hover:text-fire transition-colors flex items-center gap-1"
+            >
+              View invoices
+              <ArrowRight className="w-3 h-3" strokeWidth={2} />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Stat strip (4 cols) ────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-up delay-150">
+        <Link
+          href="/clients"
+          className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-surface-2 px-4 py-3.5 hover:border-white/[0.12] hover:bg-surface-3 transition-all"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
+            <Users className="w-4 h-4 text-gold" strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="font-display text-2xl font-black text-cream tabular-nums leading-none">
+              {clients.length}
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-cream/40 font-mono mt-0.5">
+              {clients.length === 1 ? "Client" : "Clients"}
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/projects"
+          className="group flex items-center gap-3 rounded-xl border border-white/[0.06] bg-surface-2 px-4 py-3.5 hover:border-white/[0.12] hover:bg-surface-3 transition-all"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-fire/10">
+            <FolderOpen className="w-4 h-4 text-fire" strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="font-display text-2xl font-black text-cream tabular-nums leading-none">
+              {totalProjects}
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-cream/40 font-mono mt-0.5">
+              {totalProjects === 1 ? "Project" : "Projects"}
+            </div>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-surface-2 px-4 py-3.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-coral/10">
+            <DollarSign className="w-4 h-4 text-coral" strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="font-display text-2xl font-black text-cream tabular-nums leading-none">
+              {formatMoney(outstandingCents)}
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-cream/40 font-mono mt-0.5">
+              Outstanding
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-surface-2 px-4 py-3.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sage/10">
+            <TrendingUp className="w-4 h-4 text-sage" strokeWidth={1.75} />
+          </div>
+          <div>
+            <div className="font-display text-2xl font-black text-cream tabular-nums leading-none">
+              {formatMoney(paidCents)}
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-cream/40 font-mono mt-0.5">
+              Paid this month
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Context widgets row (2 cols) ────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-2 animate-fade-up delay-225">
         {/* Needs Attention */}
         <Card className="border-white/[0.06] bg-surface-2">
           <CardContent className="p-5">
@@ -264,45 +387,11 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Revenue */}
-        <Card className="border-white/[0.06] bg-surface-2">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-sage" strokeWidth={1.75} />
-                <h2 className="font-display text-sm font-bold text-cream">
-                  Revenue
-                </h2>
-              </div>
-              <TrendingUp className="w-3.5 h-3.5 text-cream/30" strokeWidth={1.75} />
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <div className="text-[10px] uppercase tracking-wider text-cream/40 font-mono">
-                  Outstanding
-                </div>
-                <div className="font-display text-2xl font-black text-cream tabular-nums mt-0.5">
-                  {formatMoney(outstandingCents)}
-                </div>
-              </div>
-              <div className="pt-3 border-t border-white/[0.05]">
-                <div className="text-[10px] uppercase tracking-wider text-cream/40 font-mono">
-                  Paid this month
-                </div>
-                <div className="font-display text-lg font-bold text-sage tabular-nums mt-0.5">
-                  {formatMoney(paidCents)}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* ── Pipeline snapshot ───────────────────────────────── */}
       {stages.length > 0 && totalProjects > 0 && (
-        <div className="animate-fade-up delay-225">
+        <div className="animate-fade-up delay-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-cream/40" strokeWidth={1.75} />
@@ -360,27 +449,14 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Empty state if no clients ───────────────────────── */}
-      {clients.length === 0 && (
-        <div className="animate-fade-up delay-300">
-          <Card>
-            <CardContent className="flex flex-col items-center py-16 text-center">
-              <div className="relative flex h-16 w-16 items-center justify-center">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-brand opacity-20 blur-xl" />
-                <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-fire/10 ring-1 ring-fire/20">
-                  <Layers className="h-6 w-6 text-fire" strokeWidth={1.5} />
-                </div>
-              </div>
-              <h2 className="mt-5 font-display text-xl font-bold text-cream">
-                Welcome to Friday
-              </h2>
-              <p className="mt-2 max-w-xs text-sm text-muted-foreground leading-relaxed">
-                Add your first client to start tracking projects, sending invoices, and reviewing designs.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* ── Onboarding checklist ────────────────────────────── */}
+      <OnboardingChecklist
+        hasClient={clients.length > 0}
+        hasProject={totalProjects > 0}
+        hasFile={!!firstFile}
+        hasInvoice={!!firstSentInvoice}
+        canSharePortal={clients.length > 0}
+      />
 
       {/* ── Recent activity ─────────────────────────────────── */}
       {recentActivity.length > 0 && (
