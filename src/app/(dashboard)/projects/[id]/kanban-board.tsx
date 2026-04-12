@@ -314,7 +314,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex w-72 shrink-0 flex-col rounded-xl border border-border/40 bg-muted/30 p-3"
+      className="flex w-[85vw] sm:w-72 shrink-0 flex-col rounded-xl border border-border/40 bg-muted/30 p-3 snap-start snap-always"
     >
       {/* Column header */}
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -570,7 +570,7 @@ export function KanbanBoard({ project }: { project: ProjectWithData }) {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth">
           <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
             {columns.map((column) => (
               <KanbanColumn
@@ -585,7 +585,7 @@ export function KanbanBoard({ project }: { project: ProjectWithData }) {
           </SortableContext>
 
           {/* Add column */}
-          <div className="w-72 shrink-0">
+          <div className="w-[85vw] sm:w-72 shrink-0 snap-start">
             {addingColumn ? (
               <form
                 onSubmit={handleAddColumn}
