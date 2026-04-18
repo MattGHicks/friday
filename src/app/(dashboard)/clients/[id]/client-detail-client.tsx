@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/dialog";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { ContactFormSheet } from "@/components/dashboard/contact-form";
-import type { ProjectTemplate } from "@/app/(dashboard)/projects/template-actions";
 import { deleteProject } from "@/app/(dashboard)/projects/actions";
 import {
   deleteContact,
@@ -369,13 +368,11 @@ export function ClientDetailClient({
   contacts,
   projects,
   invoiceStats,
-  templates = [],
 }: {
   client: Client;
   contacts: Contact[];
   projects: Project[];
   invoiceStats: { totalInvoiced: number; outstandingAmount: number; paidAmount: number };
-  templates?: Pick<ProjectTemplate, "id" | "name">[];
 }) {
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -665,7 +662,6 @@ export function ClientDetailClient({
         project={editingProject}
         clients={[{ id: client.id, name: client.name }]}
         defaultClientId={client.id}
-        templates={editingProject ? [] : templates}
       />
 
       <ContactFormSheet

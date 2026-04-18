@@ -76,6 +76,7 @@ export async function createInvoice(
   });
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/invoices");
   return { success: true, invoiceId: invoice.id };
 }
 
@@ -98,6 +99,7 @@ export async function deleteInvoice(
   await prisma.invoice.delete({ where: { id: invoiceId } });
 
   revalidatePath(`/projects/${invoice.project.id}`);
+  revalidatePath("/invoices");
   return { success: true };
 }
 
@@ -190,5 +192,6 @@ export async function updateInvoiceStatus(
   }
 
   revalidatePath(`/projects/${invoice.project.id}`);
+  revalidatePath("/invoices");
   return { success: true };
 }

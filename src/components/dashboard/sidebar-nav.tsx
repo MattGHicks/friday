@@ -9,7 +9,6 @@ import {
   Layers,
   CalendarDays,
   FileText,
-  Upload,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,8 +24,7 @@ const navItems = [
   { label: "Projects",  href: "/projects",  icon: LayoutList,       enabled: true },
   { label: "Pipeline",  href: "/pipeline",  icon: Layers,           enabled: true },
   { label: "Calendar",  href: "/calendar",  icon: CalendarDays,     enabled: true },
-  { label: "Invoices",  href: "/invoices",  icon: FileText,         enabled: false },
-  { label: "Files",     href: "/files",     icon: Upload,           enabled: false },
+  { label: "Invoices",  href: "/invoices",  icon: FileText,         enabled: true },
   { label: "Settings",  href: "/settings",  icon: Settings,         enabled: true },
 ];
 

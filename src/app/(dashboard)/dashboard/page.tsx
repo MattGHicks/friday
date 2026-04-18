@@ -61,7 +61,7 @@ export default async function DashboardPage() {
     paidThisMonthAgg,
     overdueInvoices,
     overdueAgg,
-    tasksDueSoon,
+    projectsDueSoon,
     recentActivity,
     firstFile,
     firstSentInvoice,
@@ -121,22 +121,14 @@ export default async function DashboardPage() {
       _sum: { total: true },
       _count: true,
     }),
-    // Tasks due in next 7 days (Card.dueDate)
-    prisma.card.findMany({
+    // Projects due in next 7 days
+    prisma.project.findMany({
       where: {
-        column: { project: { userId: user.id } },
+        userId: user.id,
+        status: { in: ["ACTIVE", "ON_HOLD"] },
         dueDate: { lte: sevenDaysFromNow, gte: monthStart },
       },
-      select: {
-        id: true,
-        title: true,
-        dueDate: true,
-        column: {
-          select: {
-            project: { select: { id: true, name: true } },
-          },
-        },
-      },
+      select: { id: true, name: true, dueDate: true },
       orderBy: { dueDate: "asc" },
       take: 5,
     }),
@@ -173,8 +165,8 @@ export default async function DashboardPage() {
   const overdueTotalCents = overdueAgg._sum.total ?? 0;
   const overdueCount = overdueAgg._count;
 
-  const tasksDueToday = tasksDueSoon.filter(
-    (t) => t.dueDate && new Date(t.dueDate) <= todayEnd
+  const projectsDueToday = projectsDueSoon.filter(
+    (p) => p.dueDate && new Date(p.dueDate) <= todayEnd
   );
 
   const hour = new Date().getHours();
@@ -353,32 +345,29 @@ export default async function DashboardPage() {
                   Today
                 </h2>
               </div>
-              {tasksDueToday.length > 0 && (
+              {projectsDueToday.length > 0 && (
                 <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-gold/15 border border-gold/25 text-[10px] text-gold font-bold">
-                  {tasksDueToday.length}
+                  {projectsDueToday.length}
                 </span>
               )}
             </div>
 
-            {tasksDueToday.length === 0 ? (
+            {projectsDueToday.length === 0 ? (
               <div className="text-xs text-cream/40 py-3 italic">
                 Nothing due today.
               </div>
             ) : (
               <div className="space-y-1.5">
-                {tasksDueToday.map((task) => (
+                {projectsDueToday.map((proj) => (
                   <Link
-                    key={task.id}
-                    href={`/projects/${task.column.project.id}`}
+                    key={proj.id}
+                    href={`/projects/${proj.id}`}
                     className="flex items-center gap-2 p-2 rounded-md hover:bg-surface-3 transition-colors group"
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-medium text-cream truncate group-hover:text-gold transition-colors">
-                        {task.title}
-                      </div>
-                      <div className="text-[10px] text-cream/40 truncate">
-                        {task.column.project.name}
+                        {proj.name}
                       </div>
                     </div>
                   </Link>

@@ -12,21 +12,14 @@ export default async function ClientDetailPage({
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [client, templates] = await Promise.all([
-    prisma.client.findFirst({
-      where: { id, userId: user.id },
-      include: {
-        contacts: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
-        projects: { orderBy: { createdAt: "desc" } },
-        invoices: { select: { total: true, status: true } },
-      },
-    }),
-    prisma.projectTemplate.findMany({
-      where: { userId: user.id },
-      select: { id: true, name: true },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  const client = await prisma.client.findFirst({
+    where: { id, userId: user.id },
+    include: {
+      contacts: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
+      projects: { orderBy: { createdAt: "desc" } },
+      invoices: { select: { total: true, status: true } },
+    },
+  });
 
   if (!client) notFound();
 
@@ -48,7 +41,6 @@ export default async function ClientDetailPage({
       contacts={client.contacts}
       projects={client.projects}
       invoiceStats={{ totalInvoiced, outstandingAmount, paidAmount }}
-      templates={templates}
     />
   );
 }

@@ -7,7 +7,6 @@ import {
   FileText,
   Image as ImageIcon,
   File,
-  CheckCircle2,
   Clock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -75,10 +74,6 @@ export default async function ClientProjectPage({
       where: { id: projectId, clientId: client.id },
       include: {
         client: { select: { id: true, name: true } },
-        columns: {
-          orderBy: { position: "asc" },
-          include: { cards: { orderBy: { position: "asc" } } },
-        },
         files: { orderBy: { createdAt: "desc" } },
         invoices: {
           where: { status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] } },
@@ -135,47 +130,6 @@ export default async function ClientProjectPage({
           </div>
         </div>
       </div>
-
-      {project.columns.length > 0 && (
-        <section>
-          <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Project board
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {project.columns.map((column) => (
-              <div
-                key={column.id}
-                className="rounded-lg border border-border/40 bg-card/50 p-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {column.name}
-                  </span>
-                  <span className="rounded-full bg-gold/10 px-1.5 py-0.5 text-[11px] font-medium text-gold">
-                    {column.cards.length}
-                  </span>
-                </div>
-                {column.cards.length > 0 && (
-                  <ul className="mt-2 space-y-1.5">
-                    {column.cards.map((card) => (
-                      <li
-                        key={card.id}
-                        className="flex items-start gap-1.5 rounded-md bg-background/60 px-2.5 py-2 text-sm"
-                      >
-                        <CheckCircle2
-                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/40"
-                          strokeWidth={1.5}
-                        />
-                        <span className="leading-snug">{card.title}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {deliverables.length > 0 && (
         <section>

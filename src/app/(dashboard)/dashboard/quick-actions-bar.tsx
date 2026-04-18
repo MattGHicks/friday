@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   UserPlus,
   FolderPlus,
@@ -13,6 +12,7 @@ import {
 import { ClientFormSheet } from "@/components/dashboard/client-form";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { MeetingFormSheet } from "@/components/dashboard/meeting-form";
+import { NewInvoiceDialog } from "@/app/(dashboard)/invoices/new-invoice-dialog";
 import { cn } from "@/lib/utils";
 
 interface QuickActionsBarProps {
@@ -24,6 +24,7 @@ export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
   const [clientFormOpen, setClientFormOpen] = useState(false);
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [meetingFormOpen, setMeetingFormOpen] = useState(false);
+  const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
 
   const actions = [
     {
@@ -42,8 +43,10 @@ export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
     {
       label: "New invoice",
       icon: Receipt,
-      href: "/projects",
-      enabled: true,
+      onClick: () => setInvoiceFormOpen(true),
+      enabled: clients.length > 0 && projects.length > 0,
+      disabledReason:
+        clients.length === 0 ? "Add a client first" : "Add a project first",
     },
     {
       label: "New quote",
@@ -101,14 +104,6 @@ export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
             );
           }
 
-          if (action.href) {
-            return (
-              <Link key={action.label} href={action.href} className={baseClass}>
-                {content}
-              </Link>
-            );
-          }
-
           return (
             <button
               key={action.label}
@@ -132,6 +127,12 @@ export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
       <MeetingFormSheet
         open={meetingFormOpen}
         onOpenChange={setMeetingFormOpen}
+        clients={clients}
+        projects={projects}
+      />
+      <NewInvoiceDialog
+        open={invoiceFormOpen}
+        onOpenChange={setInvoiceFormOpen}
         clients={clients}
         projects={projects}
       />
