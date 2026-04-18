@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { InvoiceStatus, ActivityType } from "@/generated/prisma/client";
+import {
+  InvoiceStatus,
+  ActivityType,
+  ProjectStatus,
+} from "@/generated/prisma/client";
 import { logActivity } from "./log-activity";
 import { getResend } from "@/lib/resend";
 import { buildInvoiceSentEmail } from "@/lib/email/invoice-sent";
@@ -189,6 +193,18 @@ export async function updateInvoiceStatus(
       invoiceId,
       total: invoice.total,
     });
+
+    // Deposit paid → activate the linked project and stamp the quote.
+    if (invoice.isDeposit && invoice.quoteId) {
+      await prisma.project.update({
+        where: { id: invoice.project.id },
+        data: { status: ProjectStatus.ACTIVE },
+      });
+      await prisma.quote.update({
+        where: { id: invoice.quoteId },
+        data: { depositPaidAt: new Date() },
+      });
+    }
   }
 
   revalidatePath(`/projects/${invoice.project.id}`);

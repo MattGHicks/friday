@@ -55,8 +55,10 @@ export default async function DashboardPage() {
   const [
     clients,
     projects,
+    leads,
     stages,
-    projectsByStageRaw,
+    totalProjects,
+    leadsByStageRaw,
     outstandingAgg,
     paidThisMonthAgg,
     overdueInvoices,
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
     // Clients (for quick actions + meeting form)
     prisma.client.findMany({
       where: { userId: user.id },
-      select: { id: true, name: true, company: true },
+      select: { id: true, name: true, company: true, email: true },
       orderBy: { name: "asc" },
     }),
     // Projects (for meeting form)
@@ -78,15 +80,23 @@ export default async function DashboardPage() {
       select: { id: true, name: true, clientId: true },
       orderBy: { name: "asc" },
     }),
+    // Active leads (for quick-action: new quote)
+    prisma.lead.findMany({
+      where: { userId: user.id, status: "ACTIVE" },
+      select: { id: true, name: true, company: true, email: true },
+      orderBy: { name: "asc" },
+    }),
     // Stages (for mini pipeline)
     prisma.pipelineStage.findMany({
       where: { userId: user.id },
       orderBy: { position: "asc" },
     }),
-    // Projects grouped per stage (count only)
-    prisma.project.groupBy({
-      by: ["stageId"],
-      where: { userId: user.id },
+    // Total projects (stat strip)
+    prisma.project.count({ where: { userId: user.id } }),
+    // Leads grouped per pipeline stage (active only) — drives pipeline snapshot
+    prisma.lead.groupBy({
+      by: ["pipelineStageId"],
+      where: { userId: user.id, status: "ACTIVE" },
       _count: true,
     }),
     // Outstanding (sent + viewed + overdue)
@@ -155,10 +165,10 @@ export default async function DashboardPage() {
   ]);
 
   const stageCountMap = new Map<string, number>();
-  projectsByStageRaw.forEach((row) => {
-    if (row.stageId) stageCountMap.set(row.stageId, row._count);
+  leadsByStageRaw.forEach((row) => {
+    if (row.pipelineStageId) stageCountMap.set(row.pipelineStageId, row._count);
   });
-  const totalProjects = projectsByStageRaw.reduce((sum, row) => sum + row._count, 0);
+  const totalLeads = leadsByStageRaw.reduce((sum, row) => sum + row._count, 0);
 
   const outstandingCents = outstandingAgg._sum.total ?? 0;
   const paidCents = paidThisMonthAgg._sum.total ?? 0;
@@ -190,7 +200,7 @@ export default async function DashboardPage() {
 
       {/* ── Quick actions ──────────────────────────────────── */}
       <div className="animate-fade-up delay-75">
-        <QuickActionsBar clients={clients} projects={projects} />
+        <QuickActionsBar clients={clients} projects={projects} leads={leads} />
       </div>
 
       {/* ── Overdue invoice banner ──────────────────────────── */}
@@ -379,7 +389,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Pipeline snapshot ───────────────────────────────── */}
-      {stages.length > 0 && totalProjects > 0 && (
+      {stages.length > 0 && totalLeads > 0 && (
         <div className="animate-fade-up delay-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -388,7 +398,7 @@ export default async function DashboardPage() {
                 Pipeline
               </h2>
               <span className="text-xs text-cream/30 font-mono">
-                {totalProjects} {totalProjects === 1 ? "project" : "projects"}
+                {totalLeads} {totalLeads === 1 ? "lead" : "leads"}
               </span>
             </div>
             <Link
@@ -403,7 +413,7 @@ export default async function DashboardPage() {
           <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
             {stages.map((stage) => {
               const count = stageCountMap.get(stage.id) ?? 0;
-              const pct = totalProjects > 0 ? (count / totalProjects) * 100 : 0;
+              const pct = totalLeads > 0 ? (count / totalLeads) * 100 : 0;
               return (
                 <Link
                   key={stage.id}

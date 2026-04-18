@@ -45,18 +45,6 @@ export async function createProject(
   });
   if (!client) return { error: "Client not found" };
 
-  // Land new projects in the user's default pipeline stage
-  const defaultStage = await prisma.pipelineStage.findFirst({
-    where: { userId: user.id, isDefault: true },
-  });
-  const lastInStage = defaultStage
-    ? await prisma.project.findFirst({
-        where: { userId: user.id, stageId: defaultStage.id },
-        orderBy: { stagePosition: "desc" },
-        select: { stagePosition: true },
-      })
-    : null;
-
   try {
     const project = await prisma.project.create({
       data: {
@@ -66,8 +54,6 @@ export async function createProject(
         description: parsed.data.description,
         status: parsed.data.status,
         dueDate: parsed.data.dueDate,
-        stageId: defaultStage?.id ?? null,
-        stagePosition: (lastInStage?.stagePosition ?? -1) + 1,
       },
     });
 

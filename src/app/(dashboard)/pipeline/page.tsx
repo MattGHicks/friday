@@ -1,36 +1,21 @@
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ProjectsPipelineClient } from "../projects/projects-pipeline-client";
+import { LeadsPipelineClient } from "../leads/leads-pipeline-client";
 
 export default async function PipelinePage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [stages, projects, clients] = await Promise.all([
+  const [stages, leads] = await Promise.all([
     prisma.pipelineStage.findMany({
       where: { userId: user.id },
       orderBy: { position: "asc" },
     }),
-    prisma.project.findMany({
-      where: { userId: user.id },
-      include: {
-        client: { select: { id: true, name: true, company: true } },
-        _count: { select: { invoices: true, files: true } },
-      },
+    prisma.lead.findMany({
+      where: { userId: user.id, status: "ACTIVE" },
       orderBy: [{ stagePosition: "asc" }, { createdAt: "desc" }],
-    }),
-    prisma.client.findMany({
-      where: { userId: user.id },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
     }),
   ]);
 
-  return (
-    <ProjectsPipelineClient
-      stages={stages}
-      projects={projects}
-      clients={clients}
-    />
-  );
+  return <LeadsPipelineClient stages={stages} leads={leads} />;
 }

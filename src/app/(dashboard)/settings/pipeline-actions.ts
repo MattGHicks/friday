@@ -29,7 +29,8 @@ export async function createPipelineStage(data: {
   });
 
   revalidatePath("/settings");
-  revalidatePath("/projects");
+  revalidatePath("/leads");
+  revalidatePath("/pipeline");
   revalidatePath("/dashboard");
 }
 
@@ -68,7 +69,7 @@ export async function deletePipelineStage(stageId: string) {
 
   const stage = await prisma.pipelineStage.findFirst({
     where: { id: stageId, userId: user.id },
-    include: { _count: { select: { projects: true } } },
+    include: { _count: { select: { leads: true } } },
   });
   if (!stage) throw new Error("Stage not found");
 
@@ -80,8 +81,8 @@ export async function deletePipelineStage(stageId: string) {
     throw new Error("You must have at least one pipeline stage");
   }
 
-  // If projects are in this stage, move them to the default stage (or first available)
-  if (stage._count.projects > 0) {
+  // If leads are in this stage, move them to the default stage (or first available)
+  if (stage._count.leads > 0) {
     const fallback = await prisma.pipelineStage.findFirst({
       where: {
         userId: user.id,
@@ -94,9 +95,9 @@ export async function deletePipelineStage(stageId: string) {
     });
 
     if (fallback) {
-      await prisma.project.updateMany({
-        where: { stageId: stageId },
-        data: { stageId: fallback.id },
+      await prisma.lead.updateMany({
+        where: { pipelineStageId: stageId },
+        data: { pipelineStageId: fallback.id },
       });
     }
   }
@@ -118,7 +119,8 @@ export async function deletePipelineStage(stageId: string) {
   }
 
   revalidatePath("/settings");
-  revalidatePath("/projects");
+  revalidatePath("/leads");
+  revalidatePath("/pipeline");
   revalidatePath("/dashboard");
 }
 
@@ -147,7 +149,8 @@ export async function reorderPipelineStages(orderedStageIds: string[]) {
   );
 
   revalidatePath("/settings");
-  revalidatePath("/projects");
+  revalidatePath("/leads");
+  revalidatePath("/pipeline");
   revalidatePath("/dashboard");
 }
 
@@ -174,31 +177,3 @@ export async function setDefaultPipelineStage(stageId: string) {
   revalidatePath("/settings");
 }
 
-/* ── Move project to a stage (drag-drop) ──────────────────── */
-
-export async function moveProjectToStage(
-  projectId: string,
-  stageId: string,
-  newPosition: number
-) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
-
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId: user.id },
-  });
-  if (!project) throw new Error("Project not found");
-
-  const stage = await prisma.pipelineStage.findFirst({
-    where: { id: stageId, userId: user.id },
-  });
-  if (!stage) throw new Error("Stage not found");
-
-  await prisma.project.update({
-    where: { id: projectId },
-    data: { stageId, stagePosition: newPosition },
-  });
-
-  revalidatePath("/projects");
-  revalidatePath("/dashboard");
-}

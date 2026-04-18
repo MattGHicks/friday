@@ -66,7 +66,7 @@ const PRESET_COLORS = [
 ];
 
 type StageWithCount = PipelineStage & {
-  _count: { projects: number };
+  _count: { leads: number };
 };
 
 /* ── Sortable stage row ────────────────────────────────────── */
@@ -133,8 +133,8 @@ function StageRow({
           )}
         </div>
         <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-          {stage._count.projects}{" "}
-          {stage._count.projects === 1 ? "project" : "projects"}
+          {stage._count.leads}{" "}
+          {stage._count.leads === 1 ? "lead" : "leads"}
         </p>
       </div>
 
@@ -282,7 +282,7 @@ export function PipelineStagesManager({
           position: stages.length,
           isDefault: false,
           createdAt: new Date(),
-          _count: { projects: 0 },
+          _count: { leads: 0 },
         },
       ]);
     });
@@ -328,7 +328,7 @@ export function PipelineStagesManager({
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             <h2 className="font-display text-sm font-semibold">
-              Pipeline stages
+              Lead pipeline stages
             </h2>
           </div>
           {!adding && !editing && (
@@ -344,7 +344,7 @@ export function PipelineStagesManager({
           )}
         </div>
         <p className="text-xs text-muted-foreground/70 mt-1">
-          Customize the stages projects flow through. Drag to reorder.
+          Customize the stages leads flow through before they convert. Drag to reorder.
         </p>
       </CardHeader>
       <CardContent>
@@ -398,11 +398,11 @@ export function PipelineStagesManager({
           <DialogHeader>
             <DialogTitle>Delete &ldquo;{deleteTarget?.name}&rdquo;?</DialogTitle>
             <DialogDescription>
-              {deleteTarget && deleteTarget._count.projects > 0
-                ? `${deleteTarget._count.projects} ${
-                    deleteTarget._count.projects === 1 ? "project" : "projects"
+              {deleteTarget && deleteTarget._count.leads > 0
+                ? `${deleteTarget._count.leads} ${
+                    deleteTarget._count.leads === 1 ? "lead" : "leads"
                   } in this stage will be moved to your default stage.`
-                : "This stage has no projects in it. Safe to delete."}
+                : "This stage has no leads in it. Safe to delete."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

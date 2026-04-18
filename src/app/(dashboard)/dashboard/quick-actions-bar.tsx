@@ -5,7 +5,7 @@ import {
   UserPlus,
   FolderPlus,
   Receipt,
-  FileText,
+  FileSignature,
   CalendarPlus,
   Plus,
 } from "lucide-react";
@@ -13,18 +13,23 @@ import { ClientFormSheet } from "@/components/dashboard/client-form";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { MeetingFormSheet } from "@/components/dashboard/meeting-form";
 import { NewInvoiceDialog } from "@/app/(dashboard)/invoices/new-invoice-dialog";
+import { NewQuoteDialog } from "@/app/(dashboard)/quotes/new-quote-dialog";
 import { cn } from "@/lib/utils";
 
 interface QuickActionsBarProps {
-  clients: { id: string; name: string; company: string | null }[];
+  clients: { id: string; name: string; company: string | null; email: string }[];
   projects: { id: string; name: string; clientId: string }[];
+  leads: { id: string; name: string; company: string | null; email: string | null }[];
 }
 
-export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
+export function QuickActionsBar({ clients, projects, leads }: QuickActionsBarProps) {
   const [clientFormOpen, setClientFormOpen] = useState(false);
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [meetingFormOpen, setMeetingFormOpen] = useState(false);
   const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
+  const [quoteFormOpen, setQuoteFormOpen] = useState(false);
+
+  const canQuote = leads.length > 0 || clients.length > 0;
 
   const actions = [
     {
@@ -41,18 +46,19 @@ export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
       disabledReason: "Add a client first",
     },
     {
+      label: "New quote",
+      icon: FileSignature,
+      onClick: () => setQuoteFormOpen(true),
+      enabled: canQuote,
+      disabledReason: "Add a lead or client first",
+    },
+    {
       label: "New invoice",
       icon: Receipt,
       onClick: () => setInvoiceFormOpen(true),
       enabled: clients.length > 0 && projects.length > 0,
       disabledReason:
         clients.length === 0 ? "Add a client first" : "Add a project first",
-    },
-    {
-      label: "New quote",
-      icon: FileText,
-      enabled: false,
-      disabledReason: "Coming soon",
     },
     {
       label: "New meeting",
@@ -135,6 +141,12 @@ export function QuickActionsBar({ clients, projects }: QuickActionsBarProps) {
         onOpenChange={setInvoiceFormOpen}
         clients={clients}
         projects={projects}
+      />
+      <NewQuoteDialog
+        open={quoteFormOpen}
+        onOpenChange={setQuoteFormOpen}
+        leads={leads}
+        clients={clients}
       />
     </>
   );

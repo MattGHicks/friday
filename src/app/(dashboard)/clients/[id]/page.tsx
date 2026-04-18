@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ClientDetailClient } from "./client-detail-client";
+import { QuotesPanel } from "../../quotes/quotes-panel";
 
 export default async function ClientDetailPage({
   params,
@@ -23,6 +24,17 @@ export default async function ClientDetailPage({
 
   if (!client) notFound();
 
+  const quotes = await prisma.quote.findMany({
+    where: { userId: user.id, clientId: client.id },
+    include: {
+      lineItems: {
+        orderBy: { position: "asc" },
+        select: { description: true, quantity: true, unitPrice: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
   const totalInvoiced = client.invoices
     .filter((inv) => inv.status !== "DRAFT")
     .reduce((sum, inv) => sum + inv.total, 0);
@@ -35,12 +47,23 @@ export default async function ClientDetailPage({
     .filter((inv) => inv.status === "PAID")
     .reduce((sum, inv) => sum + inv.total, 0);
 
+  const publicBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
+
   return (
-    <ClientDetailClient
-      client={client}
-      contacts={client.contacts}
-      projects={client.projects}
-      invoiceStats={{ totalInvoiced, outstandingAmount, paidAmount }}
-    />
+    <div className="flex flex-col gap-8">
+      <ClientDetailClient
+        client={client}
+        contacts={client.contacts}
+        projects={client.projects}
+        invoiceStats={{ totalInvoiced, outstandingAmount, paidAmount }}
+      />
+      <QuotesPanel
+        target={{ kind: "client", clientId: client.id }}
+        recipientHasEmail={Boolean(client.email)}
+        quotes={quotes}
+        publicBaseUrl={publicBaseUrl}
+      />
+    </div>
   );
 }

@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  Sparkles,
   LayoutList,
   Layers,
   CalendarDays,
   FileText,
+  FileSignature,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,9 +23,11 @@ import {
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: true },
   { label: "Clients",   href: "/clients",   icon: Users,            enabled: true },
+  { label: "Leads",     href: "/leads",     icon: Sparkles,         enabled: true },
   { label: "Projects",  href: "/projects",  icon: LayoutList,       enabled: true },
   { label: "Pipeline",  href: "/pipeline",  icon: Layers,           enabled: true },
   { label: "Calendar",  href: "/calendar",  icon: CalendarDays,     enabled: true },
+  { label: "Quotes",    href: "/quotes",    icon: FileSignature,    enabled: true },
   { label: "Invoices",  href: "/invoices",  icon: FileText,         enabled: true },
   { label: "Settings",  href: "/settings",  icon: Settings,         enabled: true },
 ];

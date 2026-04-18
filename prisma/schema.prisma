@@ -28,6 +28,8 @@ model User {
   invoices       Invoice[]
   pipelineStages PipelineStage[]
   meetings       Meeting[]
+  leads          Lead[]
+  quotes         Quote[]
 
   @@map("users")
 }
@@ -57,6 +59,7 @@ model Client {
   projects Project[]
   invoices Invoice[]
   meetings Meeting[]
+  quotes   Quote[]
 
   @@unique([userId, email])
   @@map("clients")
@@ -93,10 +96,112 @@ model PipelineStage {
   isDefault Boolean  @default(false)     // one stage marks the default for new projects
   createdAt DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projects Project[]
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads Lead[]
 
   @@map("pipeline_stages")
+}
+
+// ── Leads ─────────────────────────────────────────────────────
+//
+// A prospective client who has not yet accepted a quote / paid a deposit.
+// On deposit-paid, a Lead converts to a real Client + Project.
+
+model Lead {
+  id                  String     @id @default(cuid())
+  userId              String
+  name                String
+  email               String?
+  phone               String?
+  company             String?
+  source              String?
+  notes               String?
+  pipelineStageId     String?
+  stagePosition       Int        @default(0)
+  status              LeadStatus @default(ACTIVE)
+  convertedClientId   String?
+  convertedProjectId  String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipelineStage PipelineStage? @relation(fields: [pipelineStageId], references: [id], onDelete: SetNull)
+  quotes        Quote[]
+
+  @@index([userId, pipelineStageId, stagePosition])
+  @@map("leads")
+}
+
+enum LeadStatus {
+  ACTIVE
+  WON
+  LOST
+  ARCHIVED
+}
+
+// ── Quotes ───────────────────────────────────────────────────
+
+model Quote {
+  id             String      @id @default(cuid())
+  userId         String
+  leadId         String?
+  clientId       String?
+  subject        String
+  subtotal       Int         // cents
+  total          Int         // cents
+  depositAmount  Int         @default(0) // cents
+  depositType    DepositType @default(PERCENT)
+  validUntil     DateTime?
+  status         QuoteStatus @default(DRAFT)
+  publicToken    String      @unique @default(cuid())
+  sentAt         DateTime?
+  viewedAt       DateTime?
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  depositPaidAt  DateTime?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead      Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  client    Client?          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lineItems QuoteLineItem[]
+  invoices  Invoice[]
+
+  @@index([userId, status])
+  @@index([leadId])
+  @@index([clientId])
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id          String @id @default(cuid())
+  quoteId     String
+  description String
+  quantity    Int    @default(1)
+  unitPrice   Int    // cents
+  total       Int    // cents
+  position    Int    @default(0)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_line_items")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum DepositType {
+  FIXED
+  PERCENT
 }
 
 // ── Projects ─────────────────────────────────────────────────
@@ -105,26 +210,23 @@ model Project {
   id          String        @id @default(cuid())
   userId      String
   clientId    String
-  stageId     String?
   name        String
   description String?
   status      ProjectStatus @default(ACTIVE)
   startDate   DateTime?
   dueDate     DateTime?
-  stagePosition Int         @default(0)  // order within its pipeline stage
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client     Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  stage      PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   files      File[]
   reviews    Review[]
   invoices   Invoice[]
   activities Activity[]
   meetings   Meeting[]
 
-  @@index([userId, stageId, stagePosition])
+  @@index([userId, status])
   @@map("projects")
 }
 
@@ -217,15 +319,19 @@ model Invoice {
   paidAt                DateTime?
   stripePaymentIntentId String?
   notes                 String?
+  quoteId               String?
+  isDeposit             Boolean       @default(false)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quote   Quote?  @relation(fields: [quoteId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([projectId])
+  @@index([quoteId])
   @@map("invoices")
 }
 
