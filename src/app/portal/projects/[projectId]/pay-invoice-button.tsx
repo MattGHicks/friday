@@ -3,12 +3,7 @@
 import { useState } from "react";
 import { CreditCard, Loader2 } from "lucide-react";
 
-interface PayInvoiceButtonProps {
-  invoiceId: string;
-  clientId: string;
-}
-
-export function PayInvoiceButton({ invoiceId, clientId }: PayInvoiceButtonProps) {
+export function PayInvoiceButton({ invoiceId }: { invoiceId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +14,7 @@ export function PayInvoiceButton({ invoiceId, clientId }: PayInvoiceButtonProps)
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceId, clientId }),
+        body: JSON.stringify({ invoiceId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -27,7 +22,6 @@ export function PayInvoiceButton({ invoiceId, clientId }: PayInvoiceButtonProps)
         setLoading(false);
         return;
       }
-      // Redirect to Stripe-hosted checkout
       window.location.href = data.url;
     } catch {
       setError("Network error. Please try again.");
@@ -37,9 +31,7 @@ export function PayInvoiceButton({ invoiceId, clientId }: PayInvoiceButtonProps)
 
   return (
     <div className="mt-3 border-t border-border/30 pt-3">
-      {error && (
-        <p className="mb-2 text-xs text-coral">{error}</p>
-      )}
+      {error && <p className="mb-2 text-xs text-coral">{error}</p>}
       <button
         onClick={handlePay}
         disabled={loading}

@@ -101,7 +101,7 @@ export async function uploadFile(
 
   // Notify the client by email — fire-and-forget, never block the upload response
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
-  const portalUrl = `${appUrl}/portal/${project.clientId}`;
+  const portalUrl = `${appUrl}/portal/projects/${projectId}`;
   const { subject, html, text } = buildFileUploadedEmail({
     freelancerName: project.user.name ?? project.user.email,
     clientName: project.client.name,

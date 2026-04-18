@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -13,7 +13,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
-import type { ProjectStatus, InvoiceStatus, ActivityType } from "@/generated/prisma/client";
+import { getPortalClient } from "@/lib/portal-auth";
+import type {
+  ProjectStatus,
+  InvoiceStatus,
+  ActivityType,
+} from "@/generated/prisma/client";
 import { PayInvoiceButton } from "./pay-invoice-button";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string }> = {
@@ -48,9 +53,12 @@ function formatBytes(bytes: number): string {
 export default async function ClientProjectPage({
   params,
 }: {
-  params: Promise<{ clientId: string; projectId: string }>;
+  params: Promise<{ projectId: string }>;
 }) {
-  const { clientId, projectId } = await params;
+  const { projectId } = await params;
+
+  const client = await getPortalClient();
+  if (!client) redirect(`/portal?next=/portal/projects/${projectId}`);
 
   const CLIENT_ACTIVITY_TYPES: ActivityType[] = [
     "FILE_UPLOADED",
@@ -62,10 +70,9 @@ export default async function ClientProjectPage({
     "STATUS_CHANGED",
   ];
 
-  // Verify the project belongs to this client
   const [project, activities] = await Promise.all([
     prisma.project.findFirst({
-      where: { id: projectId, clientId },
+      where: { id: projectId, clientId: client.id },
       include: {
         client: { select: { id: true, name: true } },
         columns: {
@@ -98,10 +105,9 @@ export default async function ClientProjectPage({
 
   return (
     <div className="space-y-8">
-      {/* Back + header */}
       <div>
         <Link
-          href={`/portal/${clientId}`}
+          href="/portal"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
@@ -130,7 +136,6 @@ export default async function ClientProjectPage({
         </div>
       </div>
 
-      {/* Board status */}
       {project.columns.length > 0 && (
         <section>
           <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -138,7 +143,10 @@ export default async function ClientProjectPage({
           </h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {project.columns.map((column) => (
-              <div key={column.id} className="rounded-lg border border-border/40 bg-card/50 p-3">
+              <div
+                key={column.id}
+                className="rounded-lg border border-border/40 bg-card/50 p-3"
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {column.name}
@@ -169,7 +177,6 @@ export default async function ClientProjectPage({
         </section>
       )}
 
-      {/* Deliverables */}
       {deliverables.length > 0 && (
         <section>
           <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -207,7 +214,6 @@ export default async function ClientProjectPage({
         </section>
       )}
 
-      {/* All files (if different from deliverables) */}
       {allFiles.length > deliverables.length && (
         <section>
           <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -247,13 +253,12 @@ export default async function ClientProjectPage({
         </section>
       )}
 
-      {/* Activity feed */}
       {activities.length > 0 && (
         <section>
           <h2 className="mb-4 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Recent activity
           </h2>
-          <div className="relative border-l-2 border-border/30 pl-6 flex flex-col gap-5">
+          <div className="relative flex flex-col gap-5 border-l-2 border-border/30 pl-6">
             {activities.map((activity) => {
               const meta = activity.metadata as Record<string, unknown> | null;
               let label = "";
@@ -289,7 +294,7 @@ export default async function ClientProjectPage({
               return (
                 <div key={activity.id} className="relative">
                   <span className="absolute -left-[1.8125rem] top-1 h-2 w-2 rounded-full bg-golden/50" />
-                  <p className="text-sm text-foreground leading-snug">
+                  <p className="text-sm leading-snug text-foreground">
                     {label}
                     {detail && (
                       <span className="ml-1.5 font-mono text-xs text-muted-foreground">
@@ -307,7 +312,6 @@ export default async function ClientProjectPage({
         </section>
       )}
 
-      {/* Invoices */}
       {project.invoices.length > 0 && (
         <section>
           <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -316,11 +320,14 @@ export default async function ClientProjectPage({
           <div className="space-y-3">
             {project.invoices.map((inv) => {
               const invCfg = INVOICE_STATUS[inv.status as InvoiceStatus];
-              const lineItems = inv.lineItems as Array<{ description: string; quantity: number; unitPrice: number }> | null;
+              const lineItems = inv.lineItems as Array<{
+                description: string;
+                quantity: number;
+                unitPrice: number;
+              }> | null;
               return (
                 <Card key={inv.id} className="border-border/40">
                   <CardContent className="p-4">
-                    {/* Invoice header */}
                     <div className="flex items-center gap-3">
                       <FileText className="h-4 w-4 shrink-0 text-gold" strokeWidth={1.5} />
                       <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -338,7 +345,6 @@ export default async function ClientProjectPage({
                         ${(inv.total / 100).toFixed(2)}
                       </span>
                     </div>
-                    {/* Line items */}
                     {lineItems && lineItems.length > 0 && (
                       <div className="mt-3 border-t border-border/30 pt-3">
                         <div className="space-y-1.5">
@@ -356,7 +362,7 @@ export default async function ClientProjectPage({
                             </div>
                           ))}
                           {inv.tax > 0 && (
-                            <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/20 pt-1.5 mt-1.5">
+                            <div className="mt-1.5 flex items-center justify-between border-t border-border/20 pt-1.5 text-xs text-muted-foreground">
                               <span>Tax</span>
                               <span className="tabular-nums">${(inv.tax / 100).toFixed(2)}</span>
                             </div>
@@ -365,12 +371,12 @@ export default async function ClientProjectPage({
                       </div>
                     )}
                     {inv.notes && (
-                      <p className="mt-2 text-xs text-muted-foreground/70 border-t border-border/20 pt-2">
+                      <p className="mt-2 border-t border-border/20 pt-2 text-xs text-muted-foreground/70">
                         {inv.notes}
                       </p>
                     )}
                     {["SENT", "VIEWED", "OVERDUE"].includes(inv.status) && (
-                      <PayInvoiceButton invoiceId={inv.id} clientId={clientId} />
+                      <PayInvoiceButton invoiceId={inv.id} />
                     )}
                   </CardContent>
                 </Card>

@@ -26,8 +26,6 @@ model User {
   clients          Client[]
   projects         Project[]
   invoices         Invoice[]
-  contracts        Contract[]
-  notifications    Notification[]
   pipelineStages   PipelineStage[]
   meetings         Meeting[]
   projectTemplates ProjectTemplate[]
@@ -55,13 +53,11 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contacts      Contact[]
-  projects      Project[]
-  invoices      Invoice[]
-  contracts     Contract[]
-  notifications Notification[]
-  meetings      Meeting[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+  projects Project[]
+  invoices Invoice[]
+  meetings Meeting[]
 
   @@unique([userId, email])
   @@map("clients")
@@ -120,15 +116,13 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client   Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  stage    PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  columns  Column[]
-  files    File[]
-  reviews  Review[]
-  invoices Invoice[]
-  contracts Contract[]
-  messages  Message[]
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client     Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  stage      PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  columns    Column[]
+  files      File[]
+  reviews    Review[]
+  invoices   Invoice[]
   activities Activity[]
   meetings   Meeting[]
 
@@ -278,50 +272,6 @@ enum InvoiceStatus {
   OVERDUE
 }
 
-// ── Contracts & Proposals ────────────────────────────────────
-
-model Contract {
-  id         String         @id @default(cuid())
-  projectId  String
-  clientId   String
-  userId     String
-  title      String
-  content    String         // rich text / markdown
-  status     ContractStatus @default(DRAFT)
-  signedAt   DateTime?
-  signerName String?
-  signerIp   String?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("contracts")
-}
-
-enum ContractStatus {
-  DRAFT
-  SENT
-  SIGNED
-}
-
-// ── Messaging ────────────────────────────────────────────────
-
-model Message {
-  id         String    @id @default(cuid())
-  projectId  String
-  senderId   String
-  senderType ActorType
-  content    String
-  createdAt  DateTime  @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@map("messages")
-}
-
 // ── Activity Log ─────────────────────────────────────────────
 
 model Activity {
@@ -350,38 +300,6 @@ enum ActivityType {
   COMMENT_ADDED
   INVOICE_SENT
   INVOICE_PAID
-  CONTRACT_SENT
-  CONTRACT_SIGNED
-  MESSAGE_SENT
-}
-
-// ── Notifications ────────────────────────────────────────────
-
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String?
-  clientId  String?
-  type      NotificationType
-  message   String
-  link      String?          // URL to navigate to when clicked
-  readAt    DateTime?
-  createdAt DateTime         @default(now())
-
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
-}
-
-enum NotificationType {
-  FILE_UPLOADED
-  STATUS_CHANGED
-  REVIEW_REQUESTED
-  COMMENT_RECEIVED
-  INVOICE_SENT
-  INVOICE_PAID
-  CONTRACT_SIGNED
-  MESSAGE_RECEIVED
 }
 
 // ── Project Templates ────────────────────────────────────────

@@ -42,11 +42,20 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Public routes — everything else is protected
-  const publicPaths = ["/", "/login", "/signup", "/auth/callback"];
-  const isPublic = publicPaths.includes(path) || path.startsWith("/portal");
+  const publicPaths = ["/", "/login", "/signup", "/auth/callback", "/portal"];
+  const isPublic = publicPaths.includes(path);
+  const isPortalInternal = path.startsWith("/portal/");
 
-  // Protected routes: redirect to login if not authenticated
-  if (!isPublic && !user) {
+  // Portal internal pages require a session; fall back to /portal sign-in
+  if (isPortalInternal && !user) {
+    const portalUrl = request.nextUrl.clone();
+    portalUrl.pathname = "/portal";
+    portalUrl.searchParams.set("next", path);
+    return NextResponse.redirect(portalUrl);
+  }
+
+  // Dashboard and other protected routes: redirect to login if not authenticated
+  if (!isPublic && !isPortalInternal && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", path);

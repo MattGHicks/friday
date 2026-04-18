@@ -39,22 +39,41 @@ export async function getCurrentUser(): Promise<User | null> {
     return existing;
   }
 
-  // First time — create user and seed default pipeline stages atomically
-  const user = await prisma.$transaction(async (tx) => {
-    const created = await tx.user.create({
-      data: {
-        id: supabaseUser.id,
-        email: supabaseUser.email!,
-      },
+  // One email = one role. If this email is already a portal client,
+  // do not auto-create a freelancer User record.
+  if (supabaseUser.email) {
+    const clientWithEmail = await prisma.client.findFirst({
+      where: { email: { equals: supabaseUser.email, mode: "insensitive" } },
+      select: { id: true },
     });
-    await tx.pipelineStage.createMany({
-      data: DEFAULT_PIPELINE_STAGES.map((stage) => ({
-        userId: created.id,
-        ...stage,
-      })),
-    });
-    return created;
-  });
+    if (clientWithEmail) return null;
+  }
 
-  return user;
+  // First time — create user and seed default pipeline stages atomically.
+  // Guard against concurrent RSC renders racing to create the same row.
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+        },
+      });
+      await tx.pipelineStage.createMany({
+        data: DEFAULT_PIPELINE_STAGES.map((stage) => ({
+          userId: created.id,
+          ...stage,
+        })),
+      });
+      return created;
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Unique constraint")) {
+      const raced = await prisma.user.findUnique({
+        where: { id: supabaseUser.id },
+      });
+      if (raced) return raced;
+    }
+    throw err;
+  }
 }

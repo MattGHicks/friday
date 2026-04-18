@@ -137,7 +137,7 @@ export async function updateInvoiceStatus(
     // Send email notification to client
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
-      const portalUrl = `${appUrl}/portal/${invoice.clientId}`;
+      const portalUrl = `${appUrl}/portal/projects/${invoice.project.id}`;
       const clientDisplayName =
         invoice.client.company ?? invoice.client.name;
       const dueDateStr = invoice.dueDate
