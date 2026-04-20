@@ -238,8 +238,18 @@ function StageEditor({
 
 export function PipelineStagesManager({
   stages: initialStages,
+  variant = "card",
 }: {
   stages: StageWithCount[];
+  /**
+   * "card" (default) — renders inside a bordered Card with its own header +
+   * "Add stage" button. Used on the old /settings page.
+   * "bare"             — no Card chrome, no internal header. Used when the
+   * manager is embedded in a FormPanel that already supplies its own
+   * title + description. The "Add stage" button floats to the right of
+   * the description in the FormPanel header slot via the consumer.
+   */
+  variant?: "card" | "bare";
 }) {
   const [stages, setStages] = useState(initialStages);
   const [adding, setAdding] = useState(false);
@@ -321,75 +331,62 @@ export function PipelineStagesManager({
     });
   }
 
-  return (
-    <Card className="border-border/40">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="font-display text-sm font-semibold">
-              Lead pipeline stages
-            </h2>
-          </div>
-          {!adding && !editing && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5 text-xs"
-              onClick={() => setAdding(true)}
-            >
-              <Plus className="h-3 w-3" strokeWidth={2} />
-              Add stage
-            </Button>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground/70 mt-1">
-          Customize the stages leads flow through before they convert. Drag to reorder.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+  const stageList = (
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={stages.map((s) => s.id)}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={stages.map((s) => s.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-1.5">
-              {stages.map((stage) =>
-                editing?.id === stage.id ? (
-                  <StageEditor
-                    key={stage.id}
-                    initial={{ name: stage.name, color: stage.color }}
-                    onSave={handleSaveEdit}
-                    onCancel={() => setEditing(null)}
-                  />
-                ) : (
-                  <StageRow
-                    key={stage.id}
-                    stage={stage}
-                    onEdit={setEditing}
-                    onDelete={setDeleteTarget}
-                    onSetDefault={handleSetDefault}
-                    isOnly={stages.length === 1}
-                  />
-                )
-              )}
-
-              {adding && (
+          <div className="space-y-1.5">
+            {stages.map((stage) =>
+              editing?.id === stage.id ? (
                 <StageEditor
-                  onSave={handleAdd}
-                  onCancel={() => setAdding(false)}
+                  key={stage.id}
+                  initial={{ name: stage.name, color: stage.color }}
+                  onSave={handleSaveEdit}
+                  onCancel={() => setEditing(null)}
                 />
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
-      </CardContent>
+              ) : (
+                <StageRow
+                  key={stage.id}
+                  stage={stage}
+                  onEdit={setEditing}
+                  onDelete={setDeleteTarget}
+                  onSetDefault={handleSetDefault}
+                  isOnly={stages.length === 1}
+                />
+              )
+            )}
 
-      {/* Delete confirmation */}
+            {adding && (
+              <StageEditor
+                onSave={handleAdd}
+                onCancel={() => setAdding(false)}
+              />
+            )}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {variant === "bare" && !adding && !editing && (
+        <div className="mt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 text-xs"
+            onClick={() => setAdding(true)}
+          >
+            <Plus className="h-3 w-3" strokeWidth={2} />
+            Add stage
+          </Button>
+        </div>
+      )}
+
       <Dialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
@@ -423,6 +420,44 @@ export function PipelineStagesManager({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  if (variant === "bare") {
+    return stageList;
+  }
+
+  return (
+    <Card className="border-border/40">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers
+              className="h-4 w-4 text-muted-foreground"
+              strokeWidth={1.5}
+            />
+            <h2 className="font-display text-sm font-semibold">
+              Lead pipeline stages
+            </h2>
+          </div>
+          {!adding && !editing && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => setAdding(true)}
+            >
+              <Plus className="h-3 w-3" strokeWidth={2} />
+              Add stage
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground/70 mt-1">
+          Customize the stages leads flow through before they convert. Drag to
+          reorder.
+        </p>
+      </CardHeader>
+      <CardContent>{stageList}</CardContent>
     </Card>
   );
 }

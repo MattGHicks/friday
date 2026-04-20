@@ -231,17 +231,29 @@ export function ProjectsListClient({
                   ) : null}
                 </div>
 
-                <div className="hidden md:flex items-center gap-3 text-cream/25 w-[50px] shrink-0">
+                <div className="hidden md:flex items-center gap-3 text-cream/35 shrink-0">
                   {project._count.files > 0 && (
-                    <span className="flex items-center gap-0.5 text-xs">
+                    <span
+                      className="flex items-center gap-1 text-xs"
+                      title={`${project._count.files} ${project._count.files === 1 ? "file" : "files"}`}
+                    >
                       <FileText className="w-3 h-3" strokeWidth={1.5} />
-                      {project._count.files}
+                      <span className="tabular-nums">{project._count.files}</span>
+                      <span className="text-cream/40">
+                        {project._count.files === 1 ? "file" : "files"}
+                      </span>
                     </span>
                   )}
                   {project._count.invoices > 0 && (
-                    <span className="flex items-center gap-0.5 text-xs">
+                    <span
+                      className="flex items-center gap-1 text-xs"
+                      title={`${project._count.invoices} ${project._count.invoices === 1 ? "invoice" : "invoices"}`}
+                    >
                       <Receipt className="w-3 h-3" strokeWidth={1.5} />
-                      {project._count.invoices}
+                      <span className="tabular-nums">{project._count.invoices}</span>
+                      <span className="text-cream/40">
+                        {project._count.invoices === 1 ? "invoice" : "invoices"}
+                      </span>
                     </span>
                   )}
                 </div>

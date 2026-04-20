@@ -6,9 +6,12 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -29,8 +32,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeadFormSheet } from "./lead-form";
+import { PipelineStagesModal } from "./pipeline-stages-modal";
 import { moveLeadToStage } from "./lead-actions";
 import type { Lead, PipelineStage } from "@/generated/prisma/client";
+
+type StageWithCount = PipelineStage & { _count: { leads: number } };
 
 function LeadCard({ lead }: { lead: Lead }) {
   const {
@@ -101,6 +107,16 @@ function StageColumn({
   stage: PipelineStage;
   leads: Lead[];
 }) {
+  // Register the whole column body as a droppable. Without this, dnd-kit
+  // only tracks the individual lead cards as drop targets — so dropping
+  // onto an *empty* column (or the padding around cards) does nothing
+  // and the drag snaps back. With it, handleDragEnd sees `over.id === stage.id`
+  // for those cases and moves the lead to the end of the stage.
+  const { isOver, setNodeRef } = useDroppable({
+    id: stage.id,
+    data: { stageId: stage.id, type: "stage" },
+  });
+
   return (
     <div className="flex flex-col w-[85vw] sm:w-60 shrink-0 h-full snap-start snap-always">
       <div className="flex items-center justify-between mb-3 px-1">
@@ -123,12 +139,21 @@ function StageColumn({
         strategy={verticalListSortingStrategy}
       >
         <div
-          className="flex-1 min-h-[120px] rounded-xl border border-white/[0.04] bg-surface-1/40 p-2 space-y-2"
+          ref={setNodeRef}
           data-stage-id={stage.id}
+          className={`flex-1 min-h-[120px] rounded-xl border p-2 space-y-2 transition-colors ${
+            isOver
+              ? "border-fire/40 bg-fire/[0.04]"
+              : "border-white/[0.04] bg-surface-1/40"
+          }`}
         >
           {leads.length === 0 ? (
-            <div className="flex items-center justify-center h-24 text-[11px] text-cream/20 font-mono italic">
-              Drop leads here
+            <div
+              className={`flex items-center justify-center h-24 text-[11px] font-mono italic transition-colors ${
+                isOver ? "text-fire/70" : "text-cream/20"
+              }`}
+            >
+              {isOver ? "Release to drop" : "Drop leads here"}
             </div>
           ) : (
             leads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
@@ -143,17 +168,29 @@ export function LeadsPipelineClient({
   stages,
   leads: initialLeads,
 }: {
-  stages: PipelineStage[];
+  stages: StageWithCount[];
   leads: Lead[];
 }) {
   const [leads, setLeads] = useState(initialLeads);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [stagesModalOpen, setStagesModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
+
+  // Collision strategy: prefer whatever the pointer is directly inside
+  // (so hovering over a lead card picks that card, hovering over column
+  // padding picks the column). Fall back to rectangle intersection if
+  // the pointer is outside every droppable — prevents "no target" snap-backs
+  // when the user's cursor strays a few pixels past a column edge.
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointer = pointerWithin(args);
+    if (pointer.length > 0) return pointer;
+    return rectIntersection(args);
+  };
 
   const leadsByStage = useMemo(() => {
     const grouped = new Map<string, Lead[]>();
@@ -248,13 +285,15 @@ export function LeadsPipelineClient({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/settings"
+            <button
+              type="button"
+              onClick={() => setStagesModalOpen(true)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-3 transition-colors"
               title="Edit pipeline stages"
+              aria-label="Edit pipeline stages"
             >
               <SettingsIcon className="h-4 w-4" strokeWidth={1.5} />
-            </Link>
+            </button>
             <Button onClick={() => setFormOpen(true)} className="gap-1.5">
               <Plus className="h-4 w-4" strokeWidth={2} />
               New lead
@@ -273,11 +312,11 @@ export function LeadsPipelineClient({
               No pipeline stages yet
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Set up your lead pipeline stages in Settings to start using the board.
+              Set up your lead pipeline stages to start using the board.
             </p>
-            <Link href="/settings">
-              <Button size="sm">Go to settings</Button>
-            </Link>
+            <Button size="sm" onClick={() => setStagesModalOpen(true)}>
+              Edit stages
+            </Button>
           </div>
         </div>
       ) : leads.length === 0 ? (
@@ -302,7 +341,7 @@ export function LeadsPipelineClient({
         <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 md:px-10 py-6 min-h-0 snap-x snap-mandatory scroll-smooth">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCorners}
+            collisionDetection={collisionDetection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
@@ -338,6 +377,11 @@ export function LeadsPipelineClient({
         open={formOpen}
         onOpenChange={setFormOpen}
         lead={null}
+        stages={stages}
+      />
+      <PipelineStagesModal
+        open={stagesModalOpen}
+        onOpenChange={setStagesModalOpen}
         stages={stages}
       />
     </div>
