@@ -33,7 +33,15 @@ export function SettingsClient({ user }: { user: UserData }) {
           Settings
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, brand, and pipeline.
+          Manage your profile, brand, and payment connections. Pipeline
+          stages now live on the{" "}
+          <a
+            href="/pipeline"
+            className="text-fire hover:text-gold transition-colors"
+          >
+            Pipeline
+          </a>{" "}
+          page.
         </p>
       </div>
 

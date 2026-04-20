@@ -10,6 +10,7 @@ export default async function PipelinePage() {
     prisma.pipelineStage.findMany({
       where: { userId: user.id },
       orderBy: { position: "asc" },
+      include: { _count: { select: { leads: true } } },
     }),
     prisma.lead.findMany({
       where: { userId: user.id, status: "ACTIVE" },
