@@ -188,7 +188,7 @@ function StageEditor({
   return (
     <div className="rounded-lg border border-fire/30 bg-surface-2 p-3 space-y-3">
       <Input
-        placeholder="Stage name (e.g. In Review)"
+        placeholder="Stage name (e.g. Negotiation)"
         value={name}
         onChange={(e) => setName(e.target.value)}
         autoFocus

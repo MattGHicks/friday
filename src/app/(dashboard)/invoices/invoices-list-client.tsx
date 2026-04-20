@@ -21,6 +21,7 @@ import {
   deleteInvoice,
 } from "@/app/(dashboard)/projects/[id]/invoice-actions";
 import { NewInvoiceDialog } from "./new-invoice-dialog";
+import { formatMoney } from "@/lib/format";
 import type { InvoiceStatus } from "@/generated/prisma/client";
 
 type InvoiceRow = {
@@ -54,10 +55,6 @@ const STATUS_FILTERS: { value: "all" | "outstanding" | InvoiceStatus; label: str
   { value: "DRAFT", label: "Drafts" },
   { value: "PAID", label: "Paid" },
 ];
-
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";

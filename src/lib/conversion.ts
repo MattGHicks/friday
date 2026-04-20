@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import {
+  ActivityType,
+  ActorType,
   InvoiceStatus,
   LeadStatus,
+  Prisma,
   ProjectStatus,
   QuoteStatus,
 } from "@/generated/prisma/client";
@@ -113,6 +116,37 @@ export async function acceptQuoteAndPrepareDeposit(quoteId: string): Promise<{
         },
       });
     }
+
+    // Activity trail on the new project so the dashboard feed + project
+    // detail page show where the work came from.
+    await tx.activity.create({
+      data: {
+        projectId: project.id,
+        actorId: quote.userId,
+        actorType: ActorType.USER,
+        action: ActivityType.PROJECT_CREATED,
+        metadata: {
+          source: "quote_accepted",
+          quoteId: quote.id,
+          quoteSubject: quote.subject,
+          depositAmount: quote.depositAmount,
+          fromLead: Boolean(leadId),
+        } as Prisma.InputJsonValue,
+      },
+    });
+    await tx.activity.create({
+      data: {
+        projectId: project.id,
+        actorId: quote.userId,
+        actorType: ActorType.USER,
+        action: ActivityType.INVOICE_SENT,
+        metadata: {
+          invoiceId: invoice.id,
+          total: invoice.total,
+          isDeposit: true,
+        } as Prisma.InputJsonValue,
+      },
+    });
 
     return { projectId: project.id, invoiceId: invoice.id };
   });

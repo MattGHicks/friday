@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  FormPanel,
+  FormPanelBody,
+  FormPanelContent,
+  FormPanelFooter,
+  FormPanelHeader,
+} from "@/components/ui/form-panel";
 import { createInvoice } from "@/app/(dashboard)/projects/[id]/invoice-actions";
+import { formatMoney } from "@/lib/format";
 
 type LineItemDraft = {
   id: string;
@@ -36,10 +37,6 @@ function calcSubtotalCents(items: LineItemDraft[]): number {
     const price = Math.round((parseFloat(item.unitPrice) || 0) * 100);
     return sum + qty * price;
   }, 0);
-}
-
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export function NewInvoiceDialog({
@@ -149,21 +146,21 @@ export function NewInvoiceDialog({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="font-heading">New invoice</SheetTitle>
-          <SheetDescription>
-            Create a draft invoice. You can send it once it&apos;s ready.
-          </SheetDescription>
-        </SheetHeader>
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+    <FormPanel open={open} onOpenChange={onOpenChange}>
+      <FormPanelContent size="xl">
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col min-h-0">
+          <FormPanelHeader
+            title="New invoice"
+            description="Create a draft invoice. You can send it once it's ready."
+          />
+          <FormPanelBody>
           {error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </div>
           )}
+
+          <div className="space-y-5">
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -353,22 +350,23 @@ export function NewInvoiceDialog({
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          </div>
+          </FormPanelBody>
+          <FormPanelFooter>
             <Button
               type="button"
               variant="ghost"
-              className="flex-1"
               onClick={() => onOpenChange(false)}
               disabled={pending}
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1" disabled={pending}>
+            <Button type="submit" disabled={pending}>
               {pending ? "Saving…" : "Create draft"}
             </Button>
-          </div>
+          </FormPanelFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </FormPanelContent>
+    </FormPanel>
   );
 }

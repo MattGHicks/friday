@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { createInvoice, updateInvoiceStatus, deleteInvoice } from "./invoice-actions";
+import { formatMoney } from "@/lib/format";
 
 export type InvoiceRecord = {
   id: string;
@@ -54,10 +55,6 @@ const STATUS_CONFIG: Record<
     className: "bg-coral/20 text-coral border-coral/30",
   },
 };
-
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";

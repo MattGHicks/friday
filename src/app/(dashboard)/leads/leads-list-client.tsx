@@ -146,16 +146,34 @@ export function LeadsListClient({
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-white/[0.06] bg-surface-2 py-16 flex flex-col items-center text-center">
           <Sparkles className="h-8 w-8 text-cream/15 mb-3" strokeWidth={1.5} />
-          <p className="text-sm text-cream/40">
-            {hasFilters ? "No leads match your filters." : "No leads yet."}
-          </p>
-          {!hasFilters && (
-            <button
-              onClick={() => setFormOpen(true)}
-              className="mt-3 text-xs text-fire hover:text-gold transition-colors"
-            >
-              Add your first lead →
-            </button>
+          {leads.length === 0 ? (
+            <>
+              <p className="text-sm text-cream/40">No leads yet.</p>
+              <button
+                onClick={() => setFormOpen(true)}
+                className="mt-3 text-xs text-fire hover:text-gold transition-colors"
+              >
+                Add your first lead →
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-cream/40">
+                {statusFilter === "active"
+                  ? "No active leads right now."
+                  : statusFilter === "archived"
+                    ? "Nothing archived."
+                    : "No leads match your search."}
+              </p>
+              {(statusFilter !== "all" || search) && (
+                <button
+                  onClick={clearFilters}
+                  className="mt-3 text-xs text-fire hover:text-gold transition-colors"
+                >
+                  Show all leads →
+                </button>
+              )}
+            </>
           )}
         </div>
       ) : (

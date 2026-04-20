@@ -15,7 +15,7 @@ import type { ProjectStatus } from "@/generated/prisma/client";
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
   ON_HOLD: { label: "On hold", className: "bg-gold/20 text-gold border-gold/30" },
-  COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30" },
+  COMPLETED: { label: "Completed", className: "bg-cream/10 text-cream/70 border-cream/20" },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50" },
 };
 

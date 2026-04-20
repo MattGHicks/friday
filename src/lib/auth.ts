@@ -4,15 +4,15 @@ import type { User } from "@/generated/prisma/client";
 
 /**
  * Default pipeline stages seeded for every new user.
- * Designer-focused workflow.
+ * Sales-oriented — these now describe how a *lead* flows through the
+ * pipeline, not a project's delivery lifecycle.
  */
 const DEFAULT_PIPELINE_STAGES = [
-  { name: "Lead", position: 0, color: "#6B6258", isDefault: false },
-  { name: "Discovery", position: 1, color: "#F0A830", isDefault: true }, // new projects land here
-  { name: "In Progress", position: 2, color: "#E55A3A", isDefault: false },
-  { name: "In Review", position: 3, color: "#F0A830", isDefault: false },
-  { name: "Delivered", position: 4, color: "#5A8A6A", isDefault: false },
-  { name: "Archived", position: 5, color: "#8A7A6A", isDefault: false },
+  { name: "New", position: 0, color: "#6B6258", isDefault: true }, // fresh leads land here
+  { name: "Discovery", position: 1, color: "#F0A830", isDefault: false },
+  { name: "Quoted", position: 2, color: "#E55A3A", isDefault: false },
+  { name: "Negotiation", position: 3, color: "#F0A830", isDefault: false },
+  { name: "Cold", position: 4, color: "#8A7A6A", isDefault: false },
 ] as const;
 
 export async function getCurrentUser(): Promise<User | null> {

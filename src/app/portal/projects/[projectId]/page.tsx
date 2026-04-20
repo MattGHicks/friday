@@ -19,11 +19,12 @@ import type {
   ActivityType,
 } from "@/generated/prisma/client";
 import { PayInvoiceButton } from "./pay-invoice-button";
+import { formatMoney } from "@/lib/format";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30" },
   ON_HOLD: { label: "On hold", className: "bg-gold/20 text-gold border-gold/30" },
-  COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30" },
+  COMPLETED: { label: "Completed", className: "bg-cream/10 text-cream/70 border-cream/20" },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50" },
 };
 
@@ -296,7 +297,7 @@ export default async function ClientProjectPage({
                         </span>
                       )}
                       <span className="ml-auto font-heading text-base font-semibold tabular-nums">
-                        ${(inv.total / 100).toFixed(2)}
+                        {formatMoney(inv.total)}
                       </span>
                     </div>
                     {lineItems && lineItems.length > 0 && (
@@ -311,14 +312,14 @@ export default async function ClientProjectPage({
                                 )}
                               </span>
                               <span className="tabular-nums">
-                                ${((item.quantity * item.unitPrice) / 100).toFixed(2)}
+                                {formatMoney(item.quantity * item.unitPrice)}
                               </span>
                             </div>
                           ))}
                           {inv.tax > 0 && (
                             <div className="mt-1.5 flex items-center justify-between border-t border-border/20 pt-1.5 text-xs text-muted-foreground">
                               <span>Tax</span>
-                              <span className="tabular-nums">${(inv.tax / 100).toFixed(2)}</span>
+                              <span className="tabular-nums">{formatMoney(inv.tax)}</span>
                             </div>
                           )}
                         </div>

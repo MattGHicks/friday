@@ -357,7 +357,7 @@ export function ReviewViewer({
       {/* Main content */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Image panel */}
-        <div className="relative flex min-w-0 flex-1 items-start justify-center overflow-auto bg-brown-950/60 p-6">
+        <div className="relative flex min-w-0 flex-1 items-start justify-center overflow-auto bg-surface-0/80 p-6">
           <div
             ref={imageContainerRef}
             className="relative inline-block cursor-crosshair select-none rounded-lg shadow-2xl"
@@ -385,7 +385,7 @@ export function ReviewViewer({
                   "absolute -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-xs font-bold shadow-md transition-all duration-150",
                   a.isResolved
                     ? "bg-sage/70 text-white"
-                    : "bg-gold text-brown-950",
+                    : "bg-gold text-surface-0",
                   selectedId === a.id
                     ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110"
                     : "hover:scale-110",
@@ -404,11 +404,11 @@ export function ReviewViewer({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Ghost pin */}
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/50 text-brown-950 text-xs font-bold ring-2 ring-gold shadow-md">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gold/50 text-surface-0 text-xs font-bold ring-2 ring-gold shadow-md">
                   {annotations.length + 1}
                 </div>
                 {/* Popover */}
-                <div className="absolute left-8 top-0 z-10 w-64 rounded-lg border border-border/60 bg-brown-900 p-3 shadow-xl">
+                <div className="absolute left-8 top-0 z-10 w-64 rounded-lg border border-border/60 bg-surface-2 p-3 shadow-xl">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground">
                       Add comment
@@ -460,7 +460,7 @@ export function ReviewViewer({
 
           {annotations.length === 0 && !pendingPin && (
             <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-8">
-              <p className="rounded-full bg-brown-950/80 px-4 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
+              <p className="rounded-full bg-surface-0/80 px-4 py-1.5 text-xs text-muted-foreground backdrop-blur-sm">
                 Click anywhere on the image to add a comment
               </p>
             </div>

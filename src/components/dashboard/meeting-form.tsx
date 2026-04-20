@@ -12,13 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  FormPanel,
+  FormPanelBody,
+  FormPanelContent,
+  FormPanelFooter,
+  FormPanelHeader,
+} from "@/components/ui/form-panel";
 import { Trash2 } from "lucide-react";
 import { MeetingType } from "@/generated/prisma/client";
 import { MEETING_TYPE_CONFIG } from "./meeting-type-config";
@@ -67,11 +68,11 @@ function combineDateTime(date: string, time: string): string {
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
+    <Button type="submit" disabled={pending}>
       {pending
         ? isEdit
-          ? "Saving..."
-          : "Scheduling..."
+          ? "Saving…"
+          : "Scheduling…"
         : isEdit
           ? "Save changes"
           : "Schedule meeting"}
@@ -87,6 +88,7 @@ export function MeetingFormSheet({
   projects,
   defaultDate,
 }: MeetingFormSheetProps) {
+  const router = useRouter();
   const isEdit = !!meeting;
   const action = isEdit ? updateMeeting : createMeeting;
 
@@ -131,12 +133,12 @@ export function MeetingFormSheet({
     setEndTime(meeting?.endTime ? toTimeString(meeting.endTime) : "11:00");
   }, [meeting, defaultDate]);
 
-  // Close on success
   useEffect(() => {
     if (state.success) {
       onOpenChange(false);
+      router.refresh();
     }
-  }, [state.success, onOpenChange]);
+  }, [state.success, onOpenChange, router]);
 
   // Projects filtered to the selected client
   const filteredProjects = selectedClientId
@@ -175,24 +177,22 @@ export function MeetingFormSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="font-display">
-            {isEdit ? "Edit meeting" : "New meeting"}
-          </SheetTitle>
-          <SheetDescription>
-            {isEdit
-              ? "Update this meeting's details."
-              : "Schedule a meeting with a client or for a project."}
-          </SheetDescription>
-        </SheetHeader>
-
+    <FormPanel open={open} onOpenChange={onOpenChange}>
+      <FormPanelContent size="lg">
         <form
           key={meeting?.id ?? "new"}
           action={handleSubmit}
-          className="mt-6 space-y-5"
+          className="flex flex-1 flex-col min-h-0"
         >
+          <FormPanelHeader
+            title={isEdit ? "Edit meeting" : "New meeting"}
+            description={
+              isEdit
+                ? "Update this meeting's details."
+                : "Schedule a meeting with a client or for a project."
+            }
+          />
+          <FormPanelBody>
           {isEdit && (
             <input type="hidden" name="meetingId" value={meeting.id} />
           )}
@@ -201,10 +201,12 @@ export function MeetingFormSheet({
           <input type="hidden" name="projectId" value={selectedProjectId} />
 
           {state.error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {state.error}
             </div>
           )}
+
+          <div className="space-y-5">
 
           {/* Title */}
           <div className="space-y-2">
@@ -375,14 +377,15 @@ export function MeetingFormSheet({
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          </div>
+          </FormPanelBody>
+          <FormPanelFooter>
             {isEdit && (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 sm:mr-auto"
                 onClick={handleDelete}
                 disabled={isDeleting}
                 title="Delete meeting"
@@ -393,17 +396,14 @@ export function MeetingFormSheet({
             <Button
               type="button"
               variant="ghost"
-              className="flex-1"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <div className="flex-1">
-              <SubmitButton isEdit={isEdit} />
-            </div>
-          </div>
+            <SubmitButton isEdit={isEdit} />
+          </FormPanelFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </FormPanelContent>
+    </FormPanel>
   );
 }

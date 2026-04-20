@@ -354,14 +354,7 @@ function ProjectCard({
 
 /* ── Main component ───────────────────────────────────────── */
 
-function formatCents(cents: number): string {
-  if (cents === 0) return "$0";
-  const dollars = cents / 100;
-  if (dollars >= 1000) {
-    return `$${(dollars / 1000).toFixed(dollars % 1000 === 0 ? 0 : 1)}k`;
-  }
-  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
+import { formatMoneyShort as formatCents } from "@/lib/format";
 
 export function ClientDetailClient({
   client,
@@ -495,7 +488,7 @@ export function ClientDetailClient({
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="rounded-xl border border-border/40 bg-surface-2/60 px-4 py-3.5">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <FolderKanban className="h-3.5 w-3.5" strokeWidth={1.5} />

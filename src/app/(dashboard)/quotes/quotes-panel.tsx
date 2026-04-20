@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { QuoteEditorDialog, type QuoteEditorTarget } from "./quote-editor";
 import { sendQuote, deleteQuote } from "./quote-actions";
+import { formatMoney } from "@/lib/format";
 import type { DepositType, QuoteStatus } from "@/generated/prisma/client";
 
 type QuoteRow = {
@@ -33,13 +34,6 @@ type QuoteRow = {
   lineItems: { description: string; quantity: number; unitPrice: number }[];
 };
 
-function formatMoney(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
 const STATUS_STYLES: Record<QuoteStatus, string> = {
   DRAFT: "bg-white/[0.04] text-cream/50 border-white/10",
   SENT: "bg-fire/10 text-fire border-fire/30",
@@ -54,11 +48,20 @@ export function QuotesPanel({
   recipientHasEmail,
   quotes,
   publicBaseUrl,
+  hideNewButton,
+  emptyState,
+  description,
 }: {
   target: QuoteEditorTarget;
   recipientHasEmail: boolean;
   quotes: QuoteRow[];
   publicBaseUrl: string;
+  /** Hide the "New quote" CTA (e.g. on a WON lead). */
+  hideNewButton?: boolean;
+  /** Override the empty-state message. */
+  emptyState?: string;
+  /** Override the panel subheading. */
+  description?: string;
 }) {
   const router = useRouter();
   const [editorOpen, setEditorOpen] = useState(false);
@@ -109,6 +112,13 @@ export function QuotesPanel({
       ? "Add an email to this lead first"
       : "This client has no email address";
 
+  const defaultDescription =
+    target.kind === "lead"
+      ? "Send a quote to turn this lead into a paying client."
+      : "Quote this client for follow-on work.";
+  const resolvedDescription = description ?? defaultDescription;
+  const resolvedEmptyState = emptyState ?? "No quotes yet.";
+
   return (
     <section className="rounded-xl border border-white/[0.06] bg-surface-2 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -116,21 +126,19 @@ export function QuotesPanel({
           <h2 className="font-display text-base font-semibold text-cream">
             Quotes
           </h2>
-          <p className="text-xs text-cream/40 mt-0.5">
-            {target.kind === "lead"
-              ? "Send a quote to turn this lead into a paying client."
-              : "Quote this client for follow-on work."}
-          </p>
+          <p className="text-xs text-cream/40 mt-0.5">{resolvedDescription}</p>
         </div>
-        <Button size="sm" onClick={openNew} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-          New quote
-        </Button>
+        {!hideNewButton && (
+          <Button size="sm" onClick={openNew} className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            New quote
+          </Button>
+        )}
       </div>
 
       {quotes.length === 0 ? (
         <div className="rounded-lg border border-dashed border-white/[0.06] py-8 text-center text-sm text-cream/40">
-          No quotes yet.
+          {resolvedEmptyState}
         </div>
       ) : (
         <div className="divide-y divide-white/[0.04] rounded-lg border border-white/[0.04]">
