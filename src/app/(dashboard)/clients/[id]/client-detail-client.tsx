@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   Trash2,
   Phone,
   Mail,
-  Link2,
   Check,
   Star,
   Users,
@@ -19,6 +18,8 @@ import {
   DollarSign,
   TrendingUp,
   Clock,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -41,12 +42,12 @@ import {
 } from "@/components/ui/dialog";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { ContactFormSheet } from "@/components/dashboard/contact-form";
-import type { ProjectTemplate } from "@/app/(dashboard)/projects/template-actions";
 import { deleteProject } from "@/app/(dashboard)/projects/actions";
 import {
   deleteContact,
   setPrimaryContact,
 } from "@/app/(dashboard)/clients/contact-actions";
+import { sendPortalInvite } from "@/app/(dashboard)/clients/[id]/invite-actions";
 import type {
   Client,
   Contact,
@@ -367,27 +368,33 @@ export function ClientDetailClient({
   contacts,
   projects,
   invoiceStats,
-  templates = [],
 }: {
   client: Client;
   contacts: Contact[];
   projects: Project[];
   invoiceStats: { totalInvoiced: number; outstandingAmount: number; paidAmount: number };
-  templates?: Pick<ProjectTemplate, "id" | "name">[];
 }) {
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [contactFormOpen, setContactFormOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<
+    "idle" | "sent" | { error: string }
+  >("idle");
+  const [isInviting, startInvite] = useTransition();
 
   const primaryContact = contacts.find((c) => c.isPrimary) ?? contacts[0];
 
-  function handleCopyPortalLink() {
-    const url = `${window.location.origin}/portal/${client.id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  function handleSendInvite() {
+    startInvite(async () => {
+      const result = await sendPortalInvite(client.id);
+      if (result.status === "sent") {
+        setInviteStatus("sent");
+        setTimeout(() => setInviteStatus("idle"), 3000);
+      } else if (result.status === "error") {
+        setInviteStatus({ error: result.error });
+        setTimeout(() => setInviteStatus("idle"), 5000);
+      }
     });
   }
 
@@ -458,19 +465,33 @@ export function ClientDetailClient({
             </div>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5 text-xs"
-          onClick={handleCopyPortalLink}
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5 text-sage" strokeWidth={1.5} />
-          ) : (
-            <Link2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={handleSendInvite}
+            disabled={isInviting || inviteStatus === "sent"}
+          >
+            {isInviting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} />
+            ) : inviteStatus === "sent" ? (
+              <Check className="h-3.5 w-3.5 text-sage" strokeWidth={1.5} />
+            ) : (
+              <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
+            )}
+            {isInviting
+              ? "Sending…"
+              : inviteStatus === "sent"
+                ? "Invite sent"
+                : "Send portal invite"}
+          </Button>
+          {typeof inviteStatus === "object" && (
+            <span className="max-w-[240px] text-right text-[11px] text-coral">
+              {inviteStatus.error}
+            </span>
           )}
-          {copied ? "Copied!" : "Copy portal link"}
-        </Button>
+        </div>
       </div>
 
       {/* Quick stats */}
@@ -641,7 +662,6 @@ export function ClientDetailClient({
         project={editingProject}
         clients={[{ id: client.id, name: client.name }]}
         defaultClientId={client.id}
-        templates={editingProject ? [] : templates}
       />
 
       <ContactFormSheet

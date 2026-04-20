@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { InvoiceStatus, ActivityType } from "@/generated/prisma/client";
+import {
+  InvoiceStatus,
+  ActivityType,
+  ProjectStatus,
+} from "@/generated/prisma/client";
 import { logActivity } from "./log-activity";
 import { getResend } from "@/lib/resend";
 import { buildInvoiceSentEmail } from "@/lib/email/invoice-sent";
@@ -76,6 +80,7 @@ export async function createInvoice(
   });
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/invoices");
   return { success: true, invoiceId: invoice.id };
 }
 
@@ -98,6 +103,7 @@ export async function deleteInvoice(
   await prisma.invoice.delete({ where: { id: invoiceId } });
 
   revalidatePath(`/projects/${invoice.project.id}`);
+  revalidatePath("/invoices");
   return { success: true };
 }
 
@@ -137,7 +143,7 @@ export async function updateInvoiceStatus(
     // Send email notification to client
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
-      const portalUrl = `${appUrl}/portal/${invoice.clientId}`;
+      const portalUrl = `${appUrl}/portal/projects/${invoice.project.id}`;
       const clientDisplayName =
         invoice.client.company ?? invoice.client.name;
       const dueDateStr = invoice.dueDate
@@ -187,8 +193,21 @@ export async function updateInvoiceStatus(
       invoiceId,
       total: invoice.total,
     });
+
+    // Deposit paid → activate the linked project and stamp the quote.
+    if (invoice.isDeposit && invoice.quoteId) {
+      await prisma.project.update({
+        where: { id: invoice.project.id },
+        data: { status: ProjectStatus.ACTIVE },
+      });
+      await prisma.quote.update({
+        where: { id: invoice.quoteId },
+        data: { depositPaidAt: new Date() },
+      });
+    }
   }
 
   revalidatePath(`/projects/${invoice.project.id}`);
+  revalidatePath("/invoices");
   return { success: true };
 }

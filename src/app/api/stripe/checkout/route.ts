@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { getPortalClient } from "@/lib/portal-auth";
 
 type LineItem = {
   description: string;
@@ -12,32 +13,36 @@ type LineItem = {
  * POST /api/stripe/checkout
  *
  * Creates a Stripe Checkout Session for a client portal invoice.
- * Called from the client portal — no freelancer auth required.
- * Security: invoiceId must belong to the clientId (cuid access token).
+ * Authorization: caller must have a portal session (Supabase magic-link auth)
+ * whose email matches the invoice's client.
  *
- * Body: { invoiceId: string; clientId: string }
+ * Body: { invoiceId: string }
  * Returns: { url: string } — the Stripe-hosted checkout URL
  */
 export async function POST(request: NextRequest) {
-  let body: { invoiceId?: string; clientId?: string };
+  const client = await getPortalClient();
+  if (!client) {
+    return NextResponse.json(
+      { error: "Sign in to the portal to pay this invoice" },
+      { status: 401 }
+    );
+  }
+
+  let body: { invoiceId?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { invoiceId, clientId } = body;
+  const { invoiceId } = body;
 
-  if (!invoiceId || !clientId) {
-    return NextResponse.json(
-      { error: "invoiceId and clientId are required" },
-      { status: 400 }
-    );
+  if (!invoiceId) {
+    return NextResponse.json({ error: "invoiceId is required" }, { status: 400 });
   }
 
-  // Load invoice and verify it belongs to this client (portal auth pattern)
   const invoice = await prisma.invoice.findFirst({
-    where: { id: invoiceId, clientId },
+    where: { id: invoiceId, clientId: client.id },
     include: {
       client: { select: { email: true } },
       project: { select: { id: true, name: true } },
@@ -49,7 +54,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  // Only SENT, VIEWED, or OVERDUE invoices are payable
   if (!["SENT", "VIEWED", "OVERDUE"].includes(invoice.status)) {
     return NextResponse.json(
       { error: "Invoice is not available for payment" },
@@ -83,16 +87,14 @@ export async function POST(request: NextRequest) {
         })),
         metadata: {
           invoiceId: invoice.id,
-          clientId,
+          clientId: client.id,
         },
-        success_url: `${appUrl}/portal/${clientId}?payment=success`,
-        cancel_url: `${appUrl}/portal/${clientId}/projects/${invoice.project.id}`,
+        success_url: `${appUrl}/portal?payment=success`,
+        cancel_url: `${appUrl}/portal/projects/${invoice.project.id}`,
       },
-      // Route payment through the connected Stripe account
       { stripeAccount: stripeAccountId }
     );
 
-    // Advance SENT → VIEWED now that the client has engaged with payment flow
     if (invoice.status === "SENT") {
       await prisma.invoice.update({
         where: { id: invoice.id },

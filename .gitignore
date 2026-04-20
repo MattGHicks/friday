@@ -33,6 +33,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Claude Code runtime state (local only)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
 /src/generated/prisma
 .vercel
 

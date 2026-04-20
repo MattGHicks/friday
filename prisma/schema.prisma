@@ -23,14 +23,13 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  clients          Client[]
-  projects         Project[]
-  invoices         Invoice[]
-  contracts        Contract[]
-  notifications    Notification[]
-  pipelineStages   PipelineStage[]
-  meetings         Meeting[]
-  projectTemplates ProjectTemplate[]
+  clients        Client[]
+  projects       Project[]
+  invoices       Invoice[]
+  pipelineStages PipelineStage[]
+  meetings       Meeting[]
+  leads          Lead[]
+  quotes         Quote[]
 
   @@map("users")
 }
@@ -55,13 +54,12 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contacts      Contact[]
-  projects      Project[]
-  invoices      Invoice[]
-  contracts     Contract[]
-  notifications Notification[]
-  meetings      Meeting[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+  projects Project[]
+  invoices Invoice[]
+  meetings Meeting[]
+  quotes   Quote[]
 
   @@unique([userId, email])
   @@map("clients")
@@ -98,10 +96,112 @@ model PipelineStage {
   isDefault Boolean  @default(false)     // one stage marks the default for new projects
   createdAt DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projects Project[]
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads Lead[]
 
   @@map("pipeline_stages")
+}
+
+// ── Leads ─────────────────────────────────────────────────────
+//
+// A prospective client who has not yet accepted a quote / paid a deposit.
+// On deposit-paid, a Lead converts to a real Client + Project.
+
+model Lead {
+  id                  String     @id @default(cuid())
+  userId              String
+  name                String
+  email               String?
+  phone               String?
+  company             String?
+  source              String?
+  notes               String?
+  pipelineStageId     String?
+  stagePosition       Int        @default(0)
+  status              LeadStatus @default(ACTIVE)
+  convertedClientId   String?
+  convertedProjectId  String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipelineStage PipelineStage? @relation(fields: [pipelineStageId], references: [id], onDelete: SetNull)
+  quotes        Quote[]
+
+  @@index([userId, pipelineStageId, stagePosition])
+  @@map("leads")
+}
+
+enum LeadStatus {
+  ACTIVE
+  WON
+  LOST
+  ARCHIVED
+}
+
+// ── Quotes ───────────────────────────────────────────────────
+
+model Quote {
+  id             String      @id @default(cuid())
+  userId         String
+  leadId         String?
+  clientId       String?
+  subject        String
+  subtotal       Int         // cents
+  total          Int         // cents
+  depositAmount  Int         @default(0) // cents
+  depositType    DepositType @default(PERCENT)
+  validUntil     DateTime?
+  status         QuoteStatus @default(DRAFT)
+  publicToken    String      @unique @default(cuid())
+  sentAt         DateTime?
+  viewedAt       DateTime?
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  depositPaidAt  DateTime?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead      Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  client    Client?          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lineItems QuoteLineItem[]
+  invoices  Invoice[]
+
+  @@index([userId, status])
+  @@index([leadId])
+  @@index([clientId])
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id          String @id @default(cuid())
+  quoteId     String
+  description String
+  quantity    Int    @default(1)
+  unitPrice   Int    // cents
+  total       Int    // cents
+  position    Int    @default(0)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_line_items")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum DepositType {
+  FIXED
+  PERCENT
 }
 
 // ── Projects ─────────────────────────────────────────────────
@@ -110,29 +210,23 @@ model Project {
   id          String        @id @default(cuid())
   userId      String
   clientId    String
-  stageId     String?
   name        String
   description String?
   status      ProjectStatus @default(ACTIVE)
   startDate   DateTime?
   dueDate     DateTime?
-  stagePosition Int         @default(0)  // order within its pipeline stage
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client   Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  stage    PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
-  columns  Column[]
-  files    File[]
-  reviews  Review[]
-  invoices Invoice[]
-  contracts Contract[]
-  messages  Message[]
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  files      File[]
+  reviews    Review[]
+  invoices   Invoice[]
   activities Activity[]
   meetings   Meeting[]
 
-  @@index([userId, stageId, stagePosition])
+  @@index([userId, status])
   @@map("projects")
 }
 
@@ -141,39 +235,6 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   ARCHIVED
-}
-
-// ── Kanban Board ─────────────────────────────────────────────
-
-model Column {
-  id        String @id @default(cuid())
-  projectId String
-  name      String
-  position  Int
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  cards   Card[]
-
-  @@index([projectId])
-  @@map("columns")
-}
-
-model Card {
-  id          String    @id @default(cuid())
-  columnId    String
-  projectId   String
-  title       String
-  description String?
-  dueDate     DateTime?
-  position    Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
-
-  @@index([columnId])
-  @@index([projectId])
-  @@map("cards")
 }
 
 // ── Files & Deliverables ─────────────────────────────────────
@@ -258,15 +319,19 @@ model Invoice {
   paidAt                DateTime?
   stripePaymentIntentId String?
   notes                 String?
+  quoteId               String?
+  isDeposit             Boolean       @default(false)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quote   Quote?  @relation(fields: [quoteId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([projectId])
+  @@index([quoteId])
   @@map("invoices")
 }
 
@@ -276,50 +341,6 @@ enum InvoiceStatus {
   VIEWED
   PAID
   OVERDUE
-}
-
-// ── Contracts & Proposals ────────────────────────────────────
-
-model Contract {
-  id         String         @id @default(cuid())
-  projectId  String
-  clientId   String
-  userId     String
-  title      String
-  content    String         // rich text / markdown
-  status     ContractStatus @default(DRAFT)
-  signedAt   DateTime?
-  signerName String?
-  signerIp   String?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("contracts")
-}
-
-enum ContractStatus {
-  DRAFT
-  SENT
-  SIGNED
-}
-
-// ── Messaging ────────────────────────────────────────────────
-
-model Message {
-  id         String    @id @default(cuid())
-  projectId  String
-  senderId   String
-  senderType ActorType
-  content    String
-  createdAt  DateTime  @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@map("messages")
 }
 
 // ── Activity Log ─────────────────────────────────────────────
@@ -350,53 +371,6 @@ enum ActivityType {
   COMMENT_ADDED
   INVOICE_SENT
   INVOICE_PAID
-  CONTRACT_SENT
-  CONTRACT_SIGNED
-  MESSAGE_SENT
-}
-
-// ── Notifications ────────────────────────────────────────────
-
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String?
-  clientId  String?
-  type      NotificationType
-  message   String
-  link      String?          // URL to navigate to when clicked
-  readAt    DateTime?
-  createdAt DateTime         @default(now())
-
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
-}
-
-enum NotificationType {
-  FILE_UPLOADED
-  STATUS_CHANGED
-  REVIEW_REQUESTED
-  COMMENT_RECEIVED
-  INVOICE_SENT
-  INVOICE_PAID
-  CONTRACT_SIGNED
-  MESSAGE_RECEIVED
-}
-
-// ── Project Templates ────────────────────────────────────────
-
-model ProjectTemplate {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  structure Json     // { columns: [{ name, position, cards: [{ title, position }] }] }
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("project_templates")
 }
 
 // ── Meetings ──────────────────────────────────────────────────

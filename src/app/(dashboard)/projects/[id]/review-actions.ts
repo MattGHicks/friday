@@ -220,7 +220,7 @@ export async function updateReviewStatus(
   // Notify client by email when status changes to APPROVED or CHANGES_REQUESTED
   if (status === "APPROVED" || status === "CHANGES_REQUESTED") {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
-    const portalUrl = `${appUrl}/portal/${review.project.clientId}`;
+    const portalUrl = `${appUrl}/portal/projects/${review.project.id}`;
     const { subject, html, text } = buildReviewStatusChangedEmail({
       freelancerName: review.project.user.name ?? review.project.user.email,
       clientName: review.project.client.name,

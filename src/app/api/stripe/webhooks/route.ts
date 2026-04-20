@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus, ActivityType } from "@/generated/prisma/client";
+import {
+  InvoiceStatus,
+  ActivityType,
+  ProjectStatus,
+} from "@/generated/prisma/client";
 import { logActivity } from "@/app/(dashboard)/projects/[id]/log-activity";
 
 /**
@@ -70,7 +74,14 @@ async function handleCheckoutSessionCompleted(
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
-    select: { id: true, projectId: true, userId: true, status: true },
+    select: {
+      id: true,
+      projectId: true,
+      userId: true,
+      status: true,
+      isDeposit: true,
+      quoteId: true,
+    },
   });
 
   if (!invoice) {
@@ -105,4 +116,17 @@ async function handleCheckoutSessionCompleted(
     ActivityType.INVOICE_PAID,
     { invoiceId, stripeSessionId: session.id }
   );
+
+  // Deposit paid → flip the linked project to ACTIVE and mark the quote.
+  if (invoice.isDeposit && invoice.quoteId) {
+    const now = new Date();
+    await prisma.project.update({
+      where: { id: invoice.projectId },
+      data: { status: ProjectStatus.ACTIVE },
+    });
+    await prisma.quote.update({
+      where: { id: invoice.quoteId },
+      data: { depositPaidAt: now },
+    });
+  }
 }

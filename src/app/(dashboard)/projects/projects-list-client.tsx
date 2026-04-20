@@ -16,18 +16,12 @@ import { Button } from "@/components/ui/button";
 import { ProjectFormSheet } from "@/components/dashboard/project-form";
 import { format, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { PipelineStage, Project, Client } from "@/generated/prisma/client";
-import type { ProjectTemplate } from "@/app/(dashboard)/projects/template-actions";
-
-/* ── Types ─────────────────────────────────────────────────── */
+import type { Project, Client } from "@/generated/prisma/client";
 
 type ProjectWithExtras = Project & {
   client: Pick<Client, "id" | "name" | "company">;
-  stage: Pick<PipelineStage, "id" | "name" | "color"> | null;
   _count: { invoices: number; files: number };
 };
-
-/* ── Status display helpers ─────────────────────────────────── */
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Active",
@@ -42,8 +36,6 @@ const STATUS_STYLES: Record<string, string> = {
   COMPLETED: "text-cream/50 border-white/15 bg-white/[0.04]",
   ARCHIVED:  "text-cream/25 border-white/[0.06] bg-white/[0.02]",
 };
-
-/* ── Filter pill ────────────────────────────────────────────── */
 
 function FilterPill({
   options,
@@ -74,53 +66,40 @@ function FilterPill({
   );
 }
 
-/* ── Main component ─────────────────────────────────────────── */
-
 export function ProjectsListClient({
   projects: initialProjects,
-  stages,
   clients,
-  templates = [],
 }: {
   projects: ProjectWithExtras[];
-  stages: PipelineStage[];
   clients: Pick<Client, "id" | "name">[];
-  templates?: Pick<ProjectTemplate, "id" | "name">[];
 }) {
-  const [search, setSearch]           = useState("");
-  const [stageFilter, setStageFilter] = useState("all");
-  const [showFilter, setShowFilter]   = useState<"active" | "all" | "archived">("active");
-  const [formOpen, setFormOpen]       = useState(false);
+  const [search, setSearch] = useState("");
+  const [showFilter, setShowFilter] = useState<"active" | "all" | "archived">("active");
+  const [formOpen, setFormOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return initialProjects.filter((p) => {
-      // Text search
       if (q) {
-        const nameMatch    = p.name.toLowerCase().includes(q);
-        const clientMatch  = (p.client.company ?? p.client.name).toLowerCase().includes(q);
+        const nameMatch   = p.name.toLowerCase().includes(q);
+        const clientMatch = (p.client.company ?? p.client.name).toLowerCase().includes(q);
         if (!nameMatch && !clientMatch) return false;
       }
-      // Stage filter
-      if (stageFilter !== "all" && p.stageId !== stageFilter) return false;
-      // Status/show filter
       if (showFilter === "active"   && (p.status === "ARCHIVED" || p.status === "COMPLETED")) return false;
       if (showFilter === "archived" && p.status !== "ARCHIVED") return false;
       return true;
     });
-  }, [initialProjects, search, stageFilter, showFilter]);
+  }, [initialProjects, search, showFilter]);
 
-  const hasFilters = search || stageFilter !== "all" || showFilter !== "active";
+  const hasFilters = search || showFilter !== "active";
 
   function clearFilters() {
     setSearch("");
-    setStageFilter("all");
     setShowFilter("active");
   }
 
   return (
     <div className="space-y-6 animate-fade-up">
-      {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-cream">
@@ -137,9 +116,7 @@ export function ProjectsListClient({
         </Button>
       </div>
 
-      {/* ── Filters bar ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-cream/25 pointer-events-none"
@@ -154,21 +131,6 @@ export function ProjectsListClient({
           />
         </div>
 
-        {/* Stage filter */}
-        <select
-          value={stageFilter}
-          onChange={(e) => setStageFilter(e.target.value)}
-          className="rounded-lg border border-white/[0.08] bg-surface-2 px-3 py-2 text-sm text-cream focus:outline-none focus:border-fire/40 transition-colors cursor-pointer"
-        >
-          <option value="all">All stages</option>
-          {stages.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Show filter */}
         <FilterPill
           options={[
             { value: "active",   label: "Active" },
@@ -179,7 +141,6 @@ export function ProjectsListClient({
           onChange={(v) => setShowFilter(v as "active" | "all" | "archived")}
         />
 
-        {/* Clear filters */}
         {hasFilters && (
           <button
             onClick={clearFilters}
@@ -191,7 +152,6 @@ export function ProjectsListClient({
         )}
       </div>
 
-      {/* ── Project list ────────────────────────────────────── */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-white/[0.06] bg-surface-2 py-16 flex flex-col items-center text-center">
           <FolderKanban
@@ -231,13 +191,6 @@ export function ProjectsListClient({
                   !isLast && "border-b border-white/[0.04]"
                 )}
               >
-                {/* Stage color dot */}
-                <div
-                  className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-black/20"
-                  style={{ background: project.stage?.color ?? "#333" }}
-                />
-
-                {/* Name + client */}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm text-cream group-hover:text-gold transition-colors truncate leading-snug">
                     {project.name}
@@ -247,22 +200,6 @@ export function ProjectsListClient({
                   </div>
                 </div>
 
-                {/* Stage name */}
-                {project.stage ? (
-                  <div className="hidden sm:flex items-center gap-1.5 w-[120px] shrink-0">
-                    <div
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: project.stage.color }}
-                    />
-                    <span className="text-xs text-cream/50 truncate">
-                      {project.stage.name}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="hidden sm:block w-[120px] shrink-0" />
-                )}
-
-                {/* Status badge */}
                 <span
                   className={cn(
                     "hidden md:inline-flex text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border w-[90px] justify-center shrink-0",
@@ -272,7 +209,6 @@ export function ProjectsListClient({
                   {STATUS_LABELS[project.status]}
                 </span>
 
-                {/* Due date */}
                 <div className="hidden lg:flex items-center gap-1 w-[70px] shrink-0">
                   {project.dueDate ? (
                     <>
@@ -295,7 +231,6 @@ export function ProjectsListClient({
                   ) : null}
                 </div>
 
-                {/* Counts */}
                 <div className="hidden md:flex items-center gap-3 text-cream/25 w-[50px] shrink-0">
                   {project._count.files > 0 && (
                     <span className="flex items-center gap-0.5 text-xs">
@@ -311,7 +246,6 @@ export function ProjectsListClient({
                   )}
                 </div>
 
-                {/* Arrow */}
                 <ArrowRight
                   className="w-3.5 h-3.5 text-cream/15 group-hover:text-cream/40 transition-colors shrink-0"
                   strokeWidth={1.5}
@@ -327,7 +261,6 @@ export function ProjectsListClient({
         onOpenChange={setFormOpen}
         project={null}
         clients={clients}
-        templates={templates}
       />
     </div>
   );

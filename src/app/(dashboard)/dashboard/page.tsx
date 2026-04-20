@@ -55,13 +55,15 @@ export default async function DashboardPage() {
   const [
     clients,
     projects,
+    leads,
     stages,
-    projectsByStageRaw,
+    totalProjects,
+    leadsByStageRaw,
     outstandingAgg,
     paidThisMonthAgg,
     overdueInvoices,
     overdueAgg,
-    tasksDueSoon,
+    projectsDueSoon,
     recentActivity,
     firstFile,
     firstSentInvoice,
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
     // Clients (for quick actions + meeting form)
     prisma.client.findMany({
       where: { userId: user.id },
-      select: { id: true, name: true, company: true },
+      select: { id: true, name: true, company: true, email: true },
       orderBy: { name: "asc" },
     }),
     // Projects (for meeting form)
@@ -78,15 +80,23 @@ export default async function DashboardPage() {
       select: { id: true, name: true, clientId: true },
       orderBy: { name: "asc" },
     }),
+    // Active leads (for quick-action: new quote)
+    prisma.lead.findMany({
+      where: { userId: user.id, status: "ACTIVE" },
+      select: { id: true, name: true, company: true, email: true },
+      orderBy: { name: "asc" },
+    }),
     // Stages (for mini pipeline)
     prisma.pipelineStage.findMany({
       where: { userId: user.id },
       orderBy: { position: "asc" },
     }),
-    // Projects grouped per stage (count only)
-    prisma.project.groupBy({
-      by: ["stageId"],
-      where: { userId: user.id },
+    // Total projects (stat strip)
+    prisma.project.count({ where: { userId: user.id } }),
+    // Leads grouped per pipeline stage (active only) — drives pipeline snapshot
+    prisma.lead.groupBy({
+      by: ["pipelineStageId"],
+      where: { userId: user.id, status: "ACTIVE" },
       _count: true,
     }),
     // Outstanding (sent + viewed + overdue)
@@ -121,22 +131,14 @@ export default async function DashboardPage() {
       _sum: { total: true },
       _count: true,
     }),
-    // Tasks due in next 7 days (Card.dueDate)
-    prisma.card.findMany({
+    // Projects due in next 7 days
+    prisma.project.findMany({
       where: {
-        column: { project: { userId: user.id } },
+        userId: user.id,
+        status: { in: ["ACTIVE", "ON_HOLD"] },
         dueDate: { lte: sevenDaysFromNow, gte: monthStart },
       },
-      select: {
-        id: true,
-        title: true,
-        dueDate: true,
-        column: {
-          select: {
-            project: { select: { id: true, name: true } },
-          },
-        },
-      },
+      select: { id: true, name: true, dueDate: true },
       orderBy: { dueDate: "asc" },
       take: 5,
     }),
@@ -163,18 +165,18 @@ export default async function DashboardPage() {
   ]);
 
   const stageCountMap = new Map<string, number>();
-  projectsByStageRaw.forEach((row) => {
-    if (row.stageId) stageCountMap.set(row.stageId, row._count);
+  leadsByStageRaw.forEach((row) => {
+    if (row.pipelineStageId) stageCountMap.set(row.pipelineStageId, row._count);
   });
-  const totalProjects = projectsByStageRaw.reduce((sum, row) => sum + row._count, 0);
+  const totalLeads = leadsByStageRaw.reduce((sum, row) => sum + row._count, 0);
 
   const outstandingCents = outstandingAgg._sum.total ?? 0;
   const paidCents = paidThisMonthAgg._sum.total ?? 0;
   const overdueTotalCents = overdueAgg._sum.total ?? 0;
   const overdueCount = overdueAgg._count;
 
-  const tasksDueToday = tasksDueSoon.filter(
-    (t) => t.dueDate && new Date(t.dueDate) <= todayEnd
+  const projectsDueToday = projectsDueSoon.filter(
+    (p) => p.dueDate && new Date(p.dueDate) <= todayEnd
   );
 
   const hour = new Date().getHours();
@@ -198,7 +200,7 @@ export default async function DashboardPage() {
 
       {/* ── Quick actions ──────────────────────────────────── */}
       <div className="animate-fade-up delay-75">
-        <QuickActionsBar clients={clients} projects={projects} />
+        <QuickActionsBar clients={clients} projects={projects} leads={leads} />
       </div>
 
       {/* ── Overdue invoice banner ──────────────────────────── */}
@@ -353,32 +355,29 @@ export default async function DashboardPage() {
                   Today
                 </h2>
               </div>
-              {tasksDueToday.length > 0 && (
+              {projectsDueToday.length > 0 && (
                 <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-gold/15 border border-gold/25 text-[10px] text-gold font-bold">
-                  {tasksDueToday.length}
+                  {projectsDueToday.length}
                 </span>
               )}
             </div>
 
-            {tasksDueToday.length === 0 ? (
+            {projectsDueToday.length === 0 ? (
               <div className="text-xs text-cream/40 py-3 italic">
                 Nothing due today.
               </div>
             ) : (
               <div className="space-y-1.5">
-                {tasksDueToday.map((task) => (
+                {projectsDueToday.map((proj) => (
                   <Link
-                    key={task.id}
-                    href={`/projects/${task.column.project.id}`}
+                    key={proj.id}
+                    href={`/projects/${proj.id}`}
                     className="flex items-center gap-2 p-2 rounded-md hover:bg-surface-3 transition-colors group"
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-medium text-cream truncate group-hover:text-gold transition-colors">
-                        {task.title}
-                      </div>
-                      <div className="text-[10px] text-cream/40 truncate">
-                        {task.column.project.name}
+                        {proj.name}
                       </div>
                     </div>
                   </Link>
@@ -390,7 +389,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Pipeline snapshot ───────────────────────────────── */}
-      {stages.length > 0 && totalProjects > 0 && (
+      {stages.length > 0 && totalLeads > 0 && (
         <div className="animate-fade-up delay-300">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -399,7 +398,7 @@ export default async function DashboardPage() {
                 Pipeline
               </h2>
               <span className="text-xs text-cream/30 font-mono">
-                {totalProjects} {totalProjects === 1 ? "project" : "projects"}
+                {totalLeads} {totalLeads === 1 ? "lead" : "leads"}
               </span>
             </div>
             <Link
@@ -414,7 +413,7 @@ export default async function DashboardPage() {
           <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
             {stages.map((stage) => {
               const count = stageCountMap.get(stage.id) ?? 0;
-              const pct = totalProjects > 0 ? (count / totalProjects) * 100 : 0;
+              const pct = totalLeads > 0 ? (count / totalLeads) * 100 : 0;
               return (
                 <Link
                   key={stage.id}

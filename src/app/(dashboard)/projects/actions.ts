@@ -45,35 +45,6 @@ export async function createProject(
   });
   if (!client) return { error: "Client not found" };
 
-  // Land new projects in the user's default pipeline stage
-  const defaultStage = await prisma.pipelineStage.findFirst({
-    where: { userId: user.id, isDefault: true },
-  });
-  const lastInStage = defaultStage
-    ? await prisma.project.findFirst({
-        where: { userId: user.id, stageId: defaultStage.id },
-        orderBy: { stagePosition: "desc" },
-        select: { stagePosition: true },
-      })
-    : null;
-
-  const templateId = formData.get("templateId") as string | null;
-
-  // If templateId provided, verify it belongs to the user
-  type TemplateStructure = {
-    columns: { name: string; position: number; cards: { title: string; position: number }[] }[];
-  };
-  let templateStructure: TemplateStructure | null = null;
-  if (templateId) {
-    const template = await prisma.projectTemplate.findFirst({
-      where: { id: templateId, userId: user.id },
-      select: { structure: true, name: true },
-    });
-    if (template) {
-      templateStructure = template.structure as unknown as TemplateStructure;
-    }
-  }
-
   try {
     const project = await prisma.project.create({
       data: {
@@ -83,38 +54,8 @@ export async function createProject(
         description: parsed.data.description,
         status: parsed.data.status,
         dueDate: parsed.data.dueDate,
-        stageId: defaultStage?.id ?? null,
-        stagePosition: (lastInStage?.stagePosition ?? -1) + 1,
       },
     });
-
-    if (templateStructure) {
-      // Apply template columns + cards
-      for (const col of templateStructure.columns) {
-        const column = await prisma.column.create({
-          data: { projectId: project.id, name: col.name, position: col.position },
-        });
-        if (col.cards.length > 0) {
-          await prisma.card.createMany({
-            data: col.cards.map((c) => ({
-              columnId: column.id,
-              projectId: project.id,
-              title: c.title,
-              position: c.position,
-            })),
-          });
-        }
-      }
-    } else {
-      // Create default columns
-      await prisma.column.createMany({
-        data: [
-          { projectId: project.id, name: "To Do", position: 0 },
-          { projectId: project.id, name: "In Progress", position: 1 },
-          { projectId: project.id, name: "Done", position: 2 },
-        ],
-      });
-    }
 
     await logActivity(project.id, user.id, ActivityType.PROJECT_CREATED);
   } catch {
