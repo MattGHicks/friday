@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  FormPanel,
+  FormPanelBody,
+  FormPanelContent,
+  FormPanelFooter,
+  FormPanelHeader,
+} from "@/components/ui/form-panel";
 import { saveQuote, sendQuote } from "./quote-actions";
 import { formatMoney } from "@/lib/format";
 import type { DepositType } from "@/generated/prisma/client";
@@ -151,16 +151,13 @@ export function QuoteEditorDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{existing ? "Edit quote" : "New quote"}</DialogTitle>
-          <DialogDescription>
-            Draft a line-itemized quote. Send it and the recipient gets a public
-            link to accept.
-          </DialogDescription>
-        </DialogHeader>
-
+    <FormPanel open={open} onOpenChange={onOpenChange}>
+      <FormPanelContent size="xl">
+        <FormPanelHeader
+          title={existing ? "Edit quote" : "New quote"}
+          description="Draft a line-itemized quote. Send it and the recipient gets a public link to accept."
+        />
+        <FormPanelBody>
         <div className="space-y-5">
           {error && (
             <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -309,33 +306,33 @@ export function QuoteEditorDialog({
               {formatMoney(subtotal)}
             </span>
           </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={pending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleSave({ sendAfter: false })}
-              disabled={pending}
-            >
-              {pending ? "Saving…" : "Save draft"}
-            </Button>
-            <Button
-              onClick={() => handleSave({ sendAfter: true })}
-              disabled={pending}
-              className="gap-1.5"
-            >
-              <Send className="h-3.5 w-3.5" strokeWidth={2} />
-              {pending ? "Sending…" : "Save & send"}
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </FormPanelBody>
+        <FormPanelFooter>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleSave({ sendAfter: false })}
+            disabled={pending}
+          >
+            {pending ? "Saving…" : "Save draft"}
+          </Button>
+          <Button
+            onClick={() => handleSave({ sendAfter: true })}
+            disabled={pending}
+            className="gap-1.5"
+          >
+            <Send className="h-3.5 w-3.5" strokeWidth={2} />
+            {pending ? "Sending…" : "Save & send"}
+          </Button>
+        </FormPanelFooter>
+      </FormPanelContent>
+    </FormPanel>
   );
 }
