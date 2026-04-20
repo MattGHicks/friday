@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone, Building2 } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building2, Trophy } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LeadDetailActions } from "./lead-detail-actions";
@@ -23,7 +23,7 @@ export default async function LeadDetailPage({
   });
   if (!lead) notFound();
 
-  const [stages, quotes] = await Promise.all([
+  const [stages, quotes, convertedClient, convertedProject] = await Promise.all([
     prisma.pipelineStage.findMany({
       where: { userId: user.id },
       select: { id: true, name: true },
@@ -39,6 +39,18 @@ export default async function LeadDetailPage({
       },
       orderBy: { createdAt: "desc" },
     }),
+    lead.convertedClientId
+      ? prisma.client.findFirst({
+          where: { id: lead.convertedClientId, userId: user.id },
+          select: { id: true, name: true, company: true },
+        })
+      : null,
+    lead.convertedProjectId
+      ? prisma.project.findFirst({
+          where: { id: lead.convertedProjectId, userId: user.id },
+          select: { id: true, name: true, status: true },
+        })
+      : null,
   ]);
 
   const publicBaseUrl =
@@ -69,6 +81,47 @@ export default async function LeadDetailPage({
           <LeadDetailActions lead={lead} stages={stages} />
         </div>
       </div>
+
+      {lead.status === "WON" && (convertedClient || convertedProject) && (
+        <section className="rounded-xl border border-sage/30 bg-sage/[0.06] px-4 py-3.5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2.5">
+              <Trophy className="h-4 w-4 shrink-0 text-sage" strokeWidth={2} />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-cream">
+                  Won — converted to a paying client
+                </span>
+                <span className="text-xs text-cream/50">
+                  Deposit accepted on{" "}
+                  {lead.updatedAt.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {convertedClient && (
+                <Link
+                  href={`/clients/${convertedClient.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-sage/30 bg-sage/5 px-2.5 py-1 text-xs text-sage hover:bg-sage/10 transition-colors"
+                >
+                  {convertedClient.company ?? convertedClient.name}
+                </Link>
+              )}
+              {convertedProject && (
+                <Link
+                  href={`/projects/${convertedProject.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-surface-3/50 px-2.5 py-1 text-xs text-cream/70 hover:border-white/15 hover:text-cream transition-colors"
+                >
+                  {convertedProject.name}
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-white/[0.06] bg-surface-2 p-4">
@@ -141,6 +194,14 @@ export default async function LeadDetailPage({
         recipientHasEmail={Boolean(lead.email)}
         quotes={quotes}
         publicBaseUrl={publicBaseUrl}
+        hideNewButton={lead.status !== "ACTIVE"}
+        description={
+          lead.status === "WON"
+            ? "This quote won the deal. Follow-on work goes on the converted client."
+            : lead.status === "LOST" || lead.status === "ARCHIVED"
+              ? "Closed. Quotes are kept for reference."
+              : undefined
+        }
       />
     </div>
   );

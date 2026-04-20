@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Check, X, Loader2, AlertTriangle, FileSignature } from "lucide-react";
 import type { QuoteStatus, DepositType } from "@/generated/prisma/client";
 import { acceptQuote, declineQuote } from "./actions";
+import { formatMoney } from "@/lib/format";
 
 type QuoteViewerProps = {
   quote: {
@@ -32,13 +33,6 @@ type QuoteViewerProps = {
   recipientName: string;
   recipientCompany: string | null;
 };
-
-function formatMoney(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
 
 function formatDate(date: Date | string | null): string {
   if (!date) return "—";

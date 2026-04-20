@@ -92,24 +92,24 @@ const features = [
   },
   {
     icon: Columns3,
-    title: "Project Board",
+    title: "Quotes that close",
     description:
-      "Kanban columns your way. Drag, reorder, and show clients exactly where things stand — full transparency, zero chaos.",
+      "Line-itemized quotes with a public accept link. The deposit invoice fires the moment a client says yes — no back-and-forth to get started.",
   },
 ];
 
 const steps = [
   {
     number: "01",
-    title: "Create your project",
+    title: "Add a lead, send a quote",
     description:
-      "Add a client, set up your project, customize the board. Takes two minutes.",
+      "Two minutes to go from new prospect to a branded quote in their inbox. Line items, deposit, valid-until — all on one page.",
   },
   {
     number: "02",
-    title: "Share the portal link",
+    title: "They accept, project kicks off",
     description:
-      "One URL. No login required for clients. They see exactly what you want them to see, branded to your studio.",
+      "A client magic-link portal opens on accept, the deposit invoice is ready, and the project is waiting for the first kickoff file.",
   },
   {
     number: "03",
@@ -393,14 +393,15 @@ export default function Home() {
                   </span>
                 </div>
                 <h3 className="font-display font-black text-3xl md:text-4xl text-cream leading-tight mb-4">
-                  Your clients never
+                  A portal your clients
                   <br />
-                  <span className="text-gradient-brand">need to log in.</span>
+                  <span className="text-gradient-brand">actually use.</span>
                 </h3>
                 <p className="text-sm text-cream/45 leading-relaxed mb-6">
-                  Every client gets a private portal link — no passwords, no
-                  onboarding, no friction. Just their project, their files, their
-                  invoices. Clean and branded to you.
+                  One magic-link email in, and they land on their private
+                  portal: project status, files, invoices — all branded to your
+                  studio. No passwords to remember, nothing for you to set up
+                  per client.
                 </p>
                 <div className="flex flex-col gap-2">
                   {[

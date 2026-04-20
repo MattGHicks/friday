@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { sendQuote, deleteQuote } from "./quote-actions";
 import { NewQuoteDialog } from "./new-quote-dialog";
+import { formatMoney } from "@/lib/format";
 import type { QuoteStatus } from "@/generated/prisma/client";
 
 type QuoteRow = {
@@ -76,10 +77,6 @@ const STATUS_FILTERS: {
   { value: "DRAFT", label: "Drafts" },
   { value: "ACCEPTED", label: "Accepted" },
 ];
-
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";

@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { createInvoice } from "@/app/(dashboard)/projects/[id]/invoice-actions";
+import { formatMoney } from "@/lib/format";
 
 type LineItemDraft = {
   id: string;
@@ -36,10 +37,6 @@ function calcSubtotalCents(items: LineItemDraft[]): number {
     const price = Math.round((parseFloat(item.unitPrice) || 0) * 100);
     return sum + qty * price;
   }, 0);
-}
-
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export function NewInvoiceDialog({

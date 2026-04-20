@@ -17,15 +17,9 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow, startOfMonth, endOfDay, addDays } from "date-fns";
 import { QuickActionsBar } from "./quick-actions-bar";
 import { OnboardingChecklist } from "./onboarding-checklist";
+import { formatMoneyShort as formatMoney } from "@/lib/format";
 
 /* ── Helpers ──────────────────────────────────────────────── */
-
-function formatMoney(cents: number): string {
-  return `$${(cents / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
-}
 
 function formatActivityLabel(action: string, metadata: unknown): string {
   const meta = metadata as Record<string, unknown> | null;

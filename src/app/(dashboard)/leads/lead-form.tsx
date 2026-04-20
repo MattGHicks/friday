@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import { createLead, updateLead, type LeadFormState } from "./lead-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ export function LeadFormSheet({
   lead?: Lead | null;
   stages: Pick<PipelineStage, "id" | "name">[];
 }) {
+  const router = useRouter();
   const isEdit = !!lead;
   const action = isEdit ? updateLead : createLead;
   const [state, formAction] = useActionState<LeadFormState, FormData>(
@@ -50,8 +52,11 @@ export function LeadFormSheet({
   );
 
   useEffect(() => {
-    if (state.success) onOpenChange(false);
-  }, [state.success, onOpenChange]);
+    if (state.success) {
+      onOpenChange(false);
+      router.refresh();
+    }
+  }, [state.success, onOpenChange, router]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

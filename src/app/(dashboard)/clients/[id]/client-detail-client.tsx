@@ -354,14 +354,7 @@ function ProjectCard({
 
 /* ── Main component ───────────────────────────────────────── */
 
-function formatCents(cents: number): string {
-  if (cents === 0) return "$0";
-  const dollars = cents / 100;
-  if (dollars >= 1000) {
-    return `$${(dollars / 1000).toFixed(dollars % 1000 === 0 ? 0 : 1)}k`;
-  }
-  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
+import { formatMoneyShort as formatCents } from "@/lib/format";
 
 export function ClientDetailClient({
   client,

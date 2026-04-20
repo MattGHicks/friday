@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { saveQuote, sendQuote } from "./quote-actions";
+import { formatMoney } from "@/lib/format";
 import type { DepositType } from "@/generated/prisma/client";
 
 type LineItemDraft = {
@@ -23,13 +24,6 @@ type LineItemDraft = {
   quantity: number;
   unitPrice: number; // cents
 };
-
-function formatMoney(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
 
 function newLineItem(): LineItemDraft {
   return {

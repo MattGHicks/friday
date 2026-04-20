@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "./settings-client";
-import { PipelineStagesManager } from "./pipeline-stages-manager";
+import { PipelineStagesManagerLazy } from "./pipeline-stages-manager-lazy";
 import { StripeConnectCard } from "./stripe-connect-card";
 
 export default async function SettingsPage() {
@@ -37,7 +37,7 @@ export default async function SettingsPage() {
       <Suspense>
         <StripeConnectCard stripeAccountId={dbUser.stripeAccountId} />
       </Suspense>
-      <PipelineStagesManager stages={stages} />
+      <PipelineStagesManagerLazy stages={stages} />
     </div>
   );
 }
