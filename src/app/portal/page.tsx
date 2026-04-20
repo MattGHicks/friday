@@ -27,7 +27,7 @@ const PROJECT_STATUS: Record<
 > = {
   ACTIVE: { label: "Active", className: "bg-sage/20 text-sage border-sage/30", icon: Clock },
   ON_HOLD: { label: "On hold", className: "bg-gold/20 text-gold border-gold/30", icon: PauseCircle },
-  COMPLETED: { label: "Completed", className: "bg-brown-400/20 text-brown-300 border-brown-400/30", icon: CheckCircle2 },
+  COMPLETED: { label: "Completed", className: "bg-cream/10 text-cream/70 border-cream/20", icon: CheckCircle2 },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50", icon: FolderKanban },
 };
 
