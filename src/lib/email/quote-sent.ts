@@ -6,6 +6,8 @@ type LineItem = {
 
 type QuoteSentEmailProps = {
   freelancerName: string;
+  freelancerLogoUrl: string | null;
+  freelancerBrandColor: string;
   clientName: string;
   quoteSubject: string;
   totalCents: number;
@@ -13,6 +15,7 @@ type QuoteSentEmailProps = {
   lineItems: LineItem[];
   publicUrl: string;
   notes: string | null;
+  customMessage: string | null;
 };
 
 function formatMoney(cents: number): string {
@@ -22,6 +25,15 @@ function formatMoney(cents: number): string {
   }).format(cents / 100);
 }
 
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
   subject: string;
   html: string;
@@ -29,6 +41,8 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
 } {
   const {
     freelancerName,
+    freelancerLogoUrl,
+    freelancerBrandColor,
     clientName,
     quoteSubject,
     totalCents,
@@ -36,15 +50,17 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
     lineItems,
     publicUrl,
     notes,
+    customMessage,
   } = props;
 
+  const brand = freelancerBrandColor;
   const subject = `Quote from ${freelancerName} — ${quoteSubject}`;
 
   const lineItemRows = lineItems
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px 0;border-bottom:1px solid #2a2a2a;">${item.description}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #2a2a2a;">${escapeHtml(item.description)}</td>
           <td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:center;">${item.quantity}</td>
           <td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:right;">${formatMoney(item.unitPrice)}</td>
           <td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:right;">${formatMoney(item.quantity * item.unitPrice)}</td>
@@ -61,7 +77,7 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
 
   const depositRow =
     depositCents > 0
-      ? `<tr><td style="font-size:14px;color:#888;">Deposit to start</td><td style="font-size:14px;color:#F0A830;text-align:right;">${formatMoney(depositCents)}</td></tr>`
+      ? `<tr><td style="font-size:14px;color:#888;">Deposit to start</td><td style="font-size:14px;color:${brand};text-align:right;">${formatMoney(depositCents)}</td></tr>`
       : "";
 
   const depositText =
@@ -69,11 +85,23 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
       ? `Deposit to start: ${formatMoney(depositCents)}\n`
       : "";
 
+  const customMessageHtml = customMessage
+    ? `<div style="margin:0 0 24px;padding:16px 20px;background:#1a1a1a;border-left:3px solid ${brand};border-radius:4px;">
+          <p style="margin:0;font-size:15px;color:#ddd;white-space:pre-wrap;">${escapeHtml(customMessage)}</p>
+        </div>`
+    : "";
+
+  const customMessageText = customMessage ? `\n${customMessage}\n` : "";
+
   const notesHtml = notes
-    ? `<p style="margin:16px 0 0;color:#999;font-size:14px;">${notes}</p>`
+    ? `<p style="margin:16px 0 0;color:#999;font-size:14px;">${escapeHtml(notes)}</p>`
     : "";
 
   const notesText = notes ? `\nNotes: ${notes}` : "";
+
+  const brandHeader = freelancerLogoUrl
+    ? `<img src="${freelancerLogoUrl}" alt="${escapeHtml(freelancerName)}" style="max-height:40px;max-width:200px;display:block;" />`
+    : `<h1 style="margin:0;font-size:22px;font-weight:700;color:${brand};">${escapeHtml(freelancerName)}</h1>`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -84,14 +112,15 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
       <table width="100%" style="max-width:560px;background:#141414;border-radius:12px;overflow:hidden;border:1px solid #242424;">
         <tr>
           <td style="padding:32px 32px 24px;border-bottom:1px solid #242424;">
-            <p style="margin:0 0 4px;font-size:13px;color:#888;letter-spacing:0.05em;text-transform:uppercase;">Quote from</p>
-            <h1 style="margin:0;font-size:22px;font-weight:700;background:linear-gradient(90deg,#E55A3A,#F0A830);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${freelancerName}</h1>
+            <p style="margin:0 0 8px;font-size:13px;color:#888;letter-spacing:0.05em;text-transform:uppercase;">Quote from</p>
+            ${brandHeader}
           </td>
         </tr>
         <tr>
           <td style="padding:28px 32px;">
-            <p style="margin:0 0 20px;font-size:15px;">Hi ${clientName},</p>
-            <p style="margin:0 0 24px;font-size:15px;color:#bbb;">Here is a quote for <strong style="color:#e5e5e5;">${quoteSubject}</strong>.</p>
+            <p style="margin:0 0 20px;font-size:15px;">Hi ${escapeHtml(clientName)},</p>
+            ${customMessageHtml}
+            <p style="margin:0 0 24px;font-size:15px;color:#bbb;">Here is a quote for <strong style="color:#e5e5e5;">${escapeHtml(quoteSubject)}</strong>.</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;margin:0 0 24px;">
               <thead>
                 <tr style="color:#888;">
@@ -106,17 +135,17 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
               <tr>
                 <td style="font-size:15px;color:#888;">Total</td>
-                <td style="font-size:22px;font-weight:700;text-align:right;color:#F0A830;">${formatMoney(totalCents)}</td>
+                <td style="font-size:22px;font-weight:700;text-align:right;color:${brand};">${formatMoney(totalCents)}</td>
               </tr>
               ${depositRow}
             </table>
-            <a href="${publicUrl}" style="display:inline-block;margin:20px 0 0;padding:12px 28px;background:linear-gradient(90deg,#E55A3A,#F0A830);color:#0f0f0f;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px;">Review Quote</a>
+            <a href="${publicUrl}" style="display:inline-block;margin:20px 0 0;padding:12px 28px;background:${brand};color:#0f0f0f;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px;">Review Quote</a>
             ${notesHtml}
           </td>
         </tr>
         <tr>
           <td style="padding:20px 32px;border-top:1px solid #242424;font-size:12px;color:#555;">
-            Sent via Friday · <a href="${publicUrl}" style="color:#888;">Open quote</a>
+            Sent via <a href="https://itsfriday.dev" style="color:#777;">Friday</a> · <a href="${publicUrl}" style="color:#888;">Open quote</a>
           </td>
         </tr>
       </table>
@@ -128,7 +157,7 @@ export function buildQuoteSentEmail(props: QuoteSentEmailProps): {
   const text = `Quote from ${freelancerName}
 
 Hi ${clientName},
-
+${customMessageText}
 Here is a quote for ${quoteSubject}.
 
 ${lineItemRowsText}

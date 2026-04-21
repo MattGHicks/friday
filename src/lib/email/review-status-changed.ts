@@ -1,11 +1,22 @@
 type ReviewStatusChangedEmailProps = {
   freelancerName: string;
+  freelancerLogoUrl: string | null;
+  freelancerBrandColor: string;
   clientName: string;
   projectName: string;
   fileName: string;
   status: "APPROVED" | "CHANGES_REQUESTED";
   portalUrl: string;
 };
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 export function buildReviewStatusChangedEmail(
   props: ReviewStatusChangedEmailProps
@@ -14,8 +25,18 @@ export function buildReviewStatusChangedEmail(
   html: string;
   text: string;
 } {
-  const { freelancerName, clientName, projectName, fileName, status, portalUrl } = props;
+  const {
+    freelancerName,
+    freelancerLogoUrl,
+    freelancerBrandColor,
+    clientName,
+    projectName,
+    fileName,
+    status,
+    portalUrl,
+  } = props;
 
+  const brand = freelancerBrandColor;
   const isApproved = status === "APPROVED";
 
   const subject = isApproved
@@ -24,19 +45,23 @@ export function buildReviewStatusChangedEmail(
 
   const statusPillBg = isApproved ? "#1a3a2a" : "#3a2a1a";
   const statusPillBorder = isApproved ? "#2a5a3a" : "#5a3a1a";
-  const statusPillText = isApproved ? "#4ade80" : "#F0A830";
+  const statusPillText = isApproved ? "#4ade80" : brand;
   const statusLabel = isApproved ? "Approved" : "Changes requested";
 
   const bodyMessage = isApproved
-    ? `<strong style="color:#e5e5e5;">${freelancerName}</strong> has approved the design for
-       <strong style="color:#e5e5e5;">${projectName}</strong>. Everything looks great.`
-    : `<strong style="color:#e5e5e5;">${freelancerName}</strong> has reviewed
-       <strong style="color:#e5e5e5;">${projectName}</strong> and left feedback requesting changes.
+    ? `<strong style="color:#e5e5e5;">${escapeHtml(freelancerName)}</strong> has approved the design for
+       <strong style="color:#e5e5e5;">${escapeHtml(projectName)}</strong>. Everything looks great.`
+    : `<strong style="color:#e5e5e5;">${escapeHtml(freelancerName)}</strong> has reviewed
+       <strong style="color:#e5e5e5;">${escapeHtml(projectName)}</strong> and left feedback requesting changes.
        Head to your portal to see the notes.`;
 
   const plainBodyMessage = isApproved
     ? `${freelancerName} has approved the design for ${projectName}. Everything looks great.`
     : `${freelancerName} has reviewed ${projectName} and left feedback requesting changes. Head to your portal to see the notes.`;
+
+  const brandHeader = freelancerLogoUrl
+    ? `<img src="${freelancerLogoUrl}" alt="${escapeHtml(freelancerName)}" style="max-height:36px;max-width:180px;display:block;" />`
+    : `<span style="font-size:18px;font-weight:700;color:${brand};">${escapeHtml(freelancerName)}</span>`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -46,22 +71,17 @@ export function buildReviewStatusChangedEmail(
     <tr><td align="center">
       <table width="100%" style="max-width:560px;background:#141414;border-radius:12px;overflow:hidden;border:1px solid #242424;">
 
-        <!-- Gradient accent rule -->
-        <tr>
-          <td style="height:4px;background:linear-gradient(90deg,#E55A3A,#F0A830,#F5EDD0);"></td>
-        </tr>
-
         <!-- Header -->
         <tr>
           <td style="padding:24px 32px 20px;border-bottom:1px solid #242424;">
-            <span style="font-size:20px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:linear-gradient(90deg,#E55A3A,#F0A830);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">FRIDAY</span>
+            ${brandHeader}
           </td>
         </tr>
 
         <!-- Body -->
         <tr>
           <td style="padding:28px 32px;">
-            <p style="margin:0 0 20px;font-size:15px;">Hi ${clientName},</p>
+            <p style="margin:0 0 20px;font-size:15px;">Hi ${escapeHtml(clientName)},</p>
             <p style="margin:0 0 24px;font-size:15px;color:#bbb;">${bodyMessage}</p>
 
             <!-- File + status pill -->
@@ -69,14 +89,14 @@ export function buildReviewStatusChangedEmail(
               <tr>
                 <td style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:8px;padding:12px 16px;">
                   <p style="margin:0 0 6px;font-size:13px;color:#888;letter-spacing:0.04em;text-transform:uppercase;">File reviewed</p>
-                  <p style="margin:0 0 10px;font-size:15px;font-weight:600;color:#e5e5e5;">${fileName}</p>
+                  <p style="margin:0 0 10px;font-size:15px;font-weight:600;color:#e5e5e5;">${escapeHtml(fileName)}</p>
                   <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.04em;background:${statusPillBg};border:1px solid ${statusPillBorder};color:${statusPillText};">${statusLabel}</span>
                 </td>
               </tr>
             </table>
 
             <!-- CTA -->
-            <a href="${portalUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(90deg,#E55A3A,#F0A830);color:#0f0f0f;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px;">View in portal</a>
+            <a href="${portalUrl}" style="display:inline-block;padding:12px 28px;background:${brand};color:#0f0f0f;font-weight:700;font-size:15px;text-decoration:none;border-radius:8px;">View in portal</a>
           </td>
         </tr>
 

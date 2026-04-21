@@ -1,19 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { format } from "date-fns";
-import { Settings, User, Palette, MessageSquare } from "lucide-react";
+import { Settings, User, Palette, MessageSquare, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { updateSettings } from "./actions";
+import { updateSettings, uploadLogo, removeLogo } from "./actions";
 
 type UserData = {
   name: string | null;
   email: string;
   brandColor: string;
+  logoUrl: string | null;
   welcomeMessage: string | null;
   plan: string;
   createdAt: Date;
@@ -23,6 +24,33 @@ const initialState: { error?: string; success?: boolean } = {};
 
 export function SettingsClient({ user }: { user: UserData }) {
   const [state, formAction, isPending] = useActionState(updateSettings, initialState);
+  const [logoUrl, setLogoUrl] = useState(user.logoUrl);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [isLogoPending, startLogoTransition] = useTransition();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  function onLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError(null);
+    const formData = new FormData();
+    formData.append("logo", file);
+    startLogoTransition(async () => {
+      const result = await uploadLogo(formData);
+      if (result.error) setLogoError(result.error);
+      else if (result.logoUrl) setLogoUrl(result.logoUrl);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    });
+  }
+
+  function onLogoRemove() {
+    setLogoError(null);
+    startLogoTransition(async () => {
+      const result = await removeLogo();
+      if (result.error) setLogoError(result.error);
+      else setLogoUrl(null);
+    });
+  }
 
   return (
     <div className="space-y-8">
@@ -88,6 +116,65 @@ export function SettingsClient({ user }: { user: UserData }) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Logo</Label>
+              <div className="flex items-center gap-3">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/40 bg-surface-1">
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={logoUrl}
+                      alt="Logo"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <Upload
+                      className="h-4 w-4 text-muted-foreground/50"
+                      strokeWidth={1.5}
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    className="hidden"
+                    onChange={onLogoFileChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isLogoPending}
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    {isLogoPending ? "Uploading…" : logoUrl ? "Replace" : "Upload"}
+                  </Button>
+                  {logoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isLogoPending}
+                      onClick={onLogoRemove}
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {logoError ? (
+                <p className="text-xs text-coral">{logoError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground/60">
+                  PNG, JPG, SVG, or WEBP. Under 512 KB. Shown in your
+                  client portal and quote emails.
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="brandColor" className="text-xs">Brand color</Label>
               <div className="flex items-center gap-2">

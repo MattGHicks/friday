@@ -18,6 +18,7 @@ import type {
   InvoiceStatus,
   ActivityType,
 } from "@/generated/prisma/client";
+import { PortalBrandHeader } from "@/components/portal/brand-header";
 import { PayInvoiceButton } from "./pay-invoice-button";
 import { formatMoney } from "@/lib/format";
 
@@ -77,6 +78,9 @@ export default async function ClientProjectPage({
       where: { id: projectId, clientId: client.id },
       include: {
         client: { select: { id: true, name: true } },
+        user: {
+          select: { name: true, logoUrl: true, brandColor: true },
+        },
         files: { orderBy: { createdAt: "desc" } },
         invoices: {
           where: { status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] } },
@@ -102,7 +106,10 @@ export default async function ClientProjectPage({
   const allFiles = project.files;
 
   return (
-    <div className="space-y-8">
+    <>
+      <PortalBrandHeader freelancer={project.user} />
+      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
+        <div className="space-y-8">
       <div>
         <Link
           href="/portal"
@@ -348,6 +355,8 @@ export default async function ClientProjectPage({
           </div>
         </section>
       )}
-    </div>
+        </div>
+      </main>
+    </>
   );
 }
