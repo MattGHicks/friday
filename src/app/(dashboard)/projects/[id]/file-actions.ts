@@ -8,6 +8,7 @@ import { ActorType, ActivityType } from "@/generated/prisma/client";
 import { logActivity } from "./log-activity";
 import { sendEmail } from "@/lib/resend";
 import { buildFileUploadedEmail } from "@/lib/email/file-uploaded";
+import { createSystemMessage } from "@/lib/messaging";
 
 const BUCKET = "project-files";
 
@@ -107,6 +108,12 @@ export async function uploadFile(
     projectId,
     actorId: user.id,
     action: ActivityType.FILE_UPLOADED,
+    metadata: { fileName: file.name },
+  });
+
+  await createSystemMessage({
+    projectId,
+    type: "FILE_UPLOADED",
     metadata: { fileName: file.name },
   });
 

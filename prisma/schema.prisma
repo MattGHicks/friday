@@ -227,9 +227,64 @@ model Project {
   invoices   Invoice[]
   activities Activity[]
   meetings   Meeting[]
+  thread     Thread?
 
   @@index([userId, status])
   @@map("projects")
+}
+
+// ── Messaging ────────────────────────────────────────────────
+//
+// One thread per project. Per-thread inbound token used to route
+// replies: outbound emails set replyTo to reply+<inboundToken>@itsfriday.dev
+// and Resend's inbound webhook parses the token back out.
+
+model Thread {
+  id           String   @id @default(cuid())
+  projectId    String   @unique
+  inboundToken String   @unique @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("threads")
+}
+
+model Message {
+  id              String            @id @default(cuid())
+  threadId        String
+  authorType      MessageAuthorType
+  authorUserId    String?           // for USER messages
+  authorClientId  String?           // for CLIENT messages (from known contacts)
+  authorEmail     String?           // fallback email for unknown senders or audit
+  authorName      String?           // display name (from email "From" or contact)
+  body            String            // sanitized plain text / minimal HTML
+  systemEventType SystemEventType?  // set when authorType=SYSTEM
+  systemMetadata  Json?             // metadata for system events (fileName, invoiceTotal, etc)
+  createdAt       DateTime          @default(now())
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("messages")
+}
+
+enum MessageAuthorType {
+  USER
+  CLIENT
+  SYSTEM
+}
+
+enum SystemEventType {
+  FILE_UPLOADED
+  REVIEW_APPROVED
+  REVIEW_CHANGES_REQUESTED
+  INVOICE_SENT
+  INVOICE_PAID
+  QUOTE_SENT
+  QUOTE_ACCEPTED
 }
 
 enum ProjectStatus {

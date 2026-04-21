@@ -20,6 +20,7 @@ import type {
 } from "@/generated/prisma/client";
 import { PortalBrandHeader } from "@/components/portal/brand-header";
 import { PayInvoiceButton } from "./pay-invoice-button";
+import { PortalMessages, type PortalMessageRecord } from "./portal-messages";
 import { formatMoney } from "@/lib/format";
 
 const PROJECT_STATUS: Record<ProjectStatus, { label: string; className: string }> = {
@@ -86,6 +87,11 @@ export default async function ClientProjectPage({
           where: { status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] } },
           orderBy: { createdAt: "desc" },
         },
+        thread: {
+          include: {
+            messages: { orderBy: { createdAt: "asc" } },
+          },
+        },
       },
     }),
     prisma.activity.findMany({
@@ -100,6 +106,18 @@ export default async function ClientProjectPage({
   ]);
 
   if (!project) notFound();
+
+  const messages: PortalMessageRecord[] = (project.thread?.messages ?? []).map(
+    (m) => ({
+      id: m.id,
+      authorType: m.authorType,
+      authorName: m.authorName,
+      body: m.body,
+      systemEventType: m.systemEventType,
+      systemMetadata: m.systemMetadata,
+      createdAt: m.createdAt,
+    })
+  );
 
   const statusCfg = PROJECT_STATUS[project.status];
   const deliverables = project.files.filter((f) => f.isDeliverable);
@@ -140,6 +158,17 @@ export default async function ClientProjectPage({
           </div>
         </div>
       </div>
+
+      <section>
+        <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Messages
+        </h2>
+        <PortalMessages
+          projectId={project.id}
+          messages={messages}
+          brandColor={project.user.brandColor}
+        />
+      </section>
 
       {deliverables.length > 0 && (
         <section>

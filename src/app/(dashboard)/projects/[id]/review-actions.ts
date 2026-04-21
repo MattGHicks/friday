@@ -7,6 +7,7 @@ import { ActorType, ReviewStatus, ActivityType } from "@/generated/prisma/client
 import { logActivity } from "./log-activity";
 import { sendEmail } from "@/lib/resend";
 import { buildReviewStatusChangedEmail } from "@/lib/email/review-status-changed";
+import { createSystemMessage } from "@/lib/messaging";
 
 export type AnnotationData = {
   id: string;
@@ -219,6 +220,11 @@ export async function updateReviewStatus(
       action: ActivityType.REVIEW_APPROVED,
       metadata: { reviewId },
     });
+    await createSystemMessage({
+      projectId: review.project.id,
+      type: "REVIEW_APPROVED",
+      metadata: { fileName: review.file.name },
+    });
   } else if (status === "CHANGES_REQUESTED") {
     await logActivity({
       userId: user.id,
@@ -226,6 +232,11 @@ export async function updateReviewStatus(
       actorId: user.id,
       action: ActivityType.REVIEW_CHANGES_REQUESTED,
       metadata: { reviewId },
+    });
+    await createSystemMessage({
+      projectId: review.project.id,
+      type: "REVIEW_CHANGES_REQUESTED",
+      metadata: { fileName: review.file.name },
     });
   }
 
