@@ -80,9 +80,12 @@ export async function addAnnotation(
     },
   });
 
-  await logActivity(review.project.id, user.id, ActivityType.COMMENT_ADDED, {
-    reviewId,
-    comment: comment.slice(0, 100),
+  await logActivity({
+    userId: user.id,
+    projectId: review.project.id,
+    actorId: user.id,
+    action: ActivityType.COMMENT_ADDED,
+    metadata: { reviewId, comment: comment.slice(0, 100) },
   });
 
   revalidatePath(`/projects/${review.project.id}/review/${review.fileId}`);
@@ -202,19 +205,21 @@ export async function updateReviewStatus(
   });
 
   if (status === "APPROVED") {
-    await logActivity(
-      review.project.id,
-      user.id,
-      ActivityType.REVIEW_APPROVED,
-      { reviewId }
-    );
+    await logActivity({
+      userId: user.id,
+      projectId: review.project.id,
+      actorId: user.id,
+      action: ActivityType.REVIEW_APPROVED,
+      metadata: { reviewId },
+    });
   } else if (status === "CHANGES_REQUESTED") {
-    await logActivity(
-      review.project.id,
-      user.id,
-      ActivityType.REVIEW_CHANGES_REQUESTED,
-      { reviewId }
-    );
+    await logActivity({
+      userId: user.id,
+      projectId: review.project.id,
+      actorId: user.id,
+      action: ActivityType.REVIEW_CHANGES_REQUESTED,
+      metadata: { reviewId },
+    });
   }
 
   // Notify client by email when status changes to APPROVED or CHANGES_REQUESTED

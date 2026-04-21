@@ -23,14 +23,19 @@ import { formatMoneyShort as formatMoney } from "@/lib/format";
 
 function formatActivityLabel(action: string, metadata: unknown): string {
   const meta = metadata as Record<string, unknown> | null;
+  const quoteSubject = meta?.quoteSubject as string | undefined;
   switch (action) {
     case "FILE_UPLOADED":            return `Uploaded ${meta?.fileName ? `"${meta.fileName}"` : "a file"}`;
-    case "INVOICE_SENT":             return "Sent an invoice";
+    case "INVOICE_SENT":             return meta?.isDeposit ? "Sent a deposit invoice" : "Sent an invoice";
     case "INVOICE_PAID":             return "Invoice marked as paid";
     case "REVIEW_APPROVED":          return "Approved a design review";
     case "REVIEW_CHANGES_REQUESTED": return "Requested changes on a review";
     case "COMMENT_ADDED":            return "Added a comment";
     case "PROJECT_CREATED":          return "Created a project";
+    case "QUOTE_SENT":               return quoteSubject ? `Sent quote — ${quoteSubject}` : "Sent a quote";
+    case "QUOTE_VIEWED":             return quoteSubject ? `Quote viewed — ${quoteSubject}` : "Quote viewed";
+    case "QUOTE_ACCEPTED":           return quoteSubject ? `Quote accepted — ${quoteSubject}` : "Quote accepted";
+    case "QUOTE_DECLINED":           return quoteSubject ? `Quote declined — ${quoteSubject}` : "Quote declined";
     case "STATUS_CHANGED":           return `Status → ${meta?.newStatus ?? "unknown"}`;
     default:                         return action.toLowerCase().replace(/_/g, " ");
   }
@@ -136,9 +141,9 @@ export default async function DashboardPage() {
       orderBy: { dueDate: "asc" },
       take: 5,
     }),
-    // Recent activity (last 10)
+    // Recent activity (last 10) — includes pre-project quote events (projectId null)
     prisma.activity.findMany({
-      where: { project: { userId: user.id } },
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 10,
       include: { project: { select: { id: true, name: true } } },
@@ -444,11 +449,12 @@ export default async function DashboardPage() {
 
       {/* ── Onboarding checklist ────────────────────────────── */}
       <OnboardingChecklist
+        hasDisplayName={!!user.name?.trim()}
         hasClient={clients.length > 0}
         hasProject={totalProjects > 0}
         hasFile={!!firstFile}
         hasInvoice={!!firstSentInvoice}
-        canSharePortal={clients.length > 0}
+        hasSharedPortal={!!user.firstPortalInviteSentAt}
       />
 
       {/* ── Recent activity ─────────────────────────────────── */}
@@ -472,13 +478,17 @@ export default async function DashboardPage() {
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-brand-r opacity-70" />
                   <div className="min-w-0 flex-1">
                     <span className="text-sm text-cream/85">{label}</span>
-                    <span className="mx-1.5 text-cream/20">·</span>
-                    <Link
-                      href={`/projects/${activity.project.id}`}
-                      className="text-xs text-cream/50 hover:text-gold transition-colors"
-                    >
-                      {activity.project.name}
-                    </Link>
+                    {activity.project && (
+                      <>
+                        <span className="mx-1.5 text-cream/20">·</span>
+                        <Link
+                          href={`/projects/${activity.project.id}`}
+                          className="text-xs text-cream/50 hover:text-gold transition-colors"
+                        >
+                          {activity.project.name}
+                        </Link>
+                      </>
+                    )}
                   </div>
                   <span className="shrink-0 text-xs text-cream/30 tabular-nums">
                     {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}

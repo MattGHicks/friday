@@ -57,7 +57,12 @@ export async function createProject(
       },
     });
 
-    await logActivity(project.id, user.id, ActivityType.PROJECT_CREATED);
+    await logActivity({
+      userId: user.id,
+      projectId: project.id,
+      actorId: user.id,
+      action: ActivityType.PROJECT_CREATED,
+    });
   } catch {
     return { error: "Something went wrong. Please try again." };
   }
@@ -111,9 +116,12 @@ export async function updateProject(
 
   // Log status change if it changed
   if (parsed.data.status !== existing.status) {
-    await logActivity(projectId, user.id, ActivityType.STATUS_CHANGED, {
-      oldStatus: existing.status,
-      newStatus: parsed.data.status,
+    await logActivity({
+      userId: user.id,
+      projectId,
+      actorId: user.id,
+      action: ActivityType.STATUS_CHANGED,
+      metadata: { oldStatus: existing.status, newStatus: parsed.data.status },
     });
   }
 
@@ -137,9 +145,12 @@ export async function quickUpdateStatus(
 
   await prisma.project.update({ where: { id: projectId }, data: { status } });
 
-  await logActivity(projectId, user.id, ActivityType.STATUS_CHANGED, {
-    oldStatus: existing.status,
-    newStatus: status,
+  await logActivity({
+    userId: user.id,
+    projectId,
+    actorId: user.id,
+    action: ActivityType.STATUS_CHANGED,
+    metadata: { oldStatus: existing.status, newStatus: status },
   });
 
   revalidatePath(`/projects/${projectId}`);

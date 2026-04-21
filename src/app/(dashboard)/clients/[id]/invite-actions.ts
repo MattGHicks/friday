@@ -49,5 +49,10 @@ export async function sendPortalInvite(clientId: string): Promise<InviteState> {
     return { status: "error", error: error.message };
   }
 
+  await prisma.user.updateMany({
+    where: { id: user.id, firstPortalInviteSentAt: null },
+    data: { firstPortalInviteSentAt: new Date() },
+  }).catch(() => {});
+
   return { status: "sent" };
 }

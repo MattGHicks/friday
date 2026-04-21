@@ -95,8 +95,12 @@ export async function uploadFile(
     return { error: "Something went wrong. Please try again." };
   }
 
-  await logActivity(projectId, user.id, ActivityType.FILE_UPLOADED, {
-    fileName: file.name,
+  await logActivity({
+    userId: user.id,
+    projectId,
+    actorId: user.id,
+    action: ActivityType.FILE_UPLOADED,
+    metadata: { fileName: file.name },
   });
 
   // Notify the client by email — fire-and-forget, never block the upload response

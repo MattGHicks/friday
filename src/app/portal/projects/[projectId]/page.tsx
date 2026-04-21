@@ -61,6 +61,8 @@ export default async function ClientProjectPage({
   if (!client) redirect(`/portal?next=/portal/projects/${projectId}`);
 
   const CLIENT_ACTIVITY_TYPES: ActivityType[] = [
+    "PROJECT_CREATED",
+    "QUOTE_ACCEPTED",
     "FILE_UPLOADED",
     "DELIVERABLE_MARKED",
     "INVOICE_SENT",
@@ -220,6 +222,12 @@ export default async function ClientProjectPage({
               let detail: string | undefined;
 
               switch (activity.action) {
+                case "PROJECT_CREATED":
+                  label = "Project started";
+                  break;
+                case "QUOTE_ACCEPTED":
+                  label = "Project kicked off from accepted quote";
+                  break;
                 case "FILE_UPLOADED":
                   label = "File uploaded";
                   detail = meta?.fileName as string | undefined;
@@ -229,7 +237,7 @@ export default async function ClientProjectPage({
                   detail = meta?.fileName as string | undefined;
                   break;
                 case "INVOICE_SENT":
-                  label = "Invoice sent";
+                  label = meta?.isDeposit ? "Deposit invoice sent" : "Invoice sent";
                   break;
                 case "INVOICE_PAID":
                   label = "Invoice paid";

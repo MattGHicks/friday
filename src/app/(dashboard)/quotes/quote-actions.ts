@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { getResend } from "@/lib/resend";
 import { buildQuoteSentEmail } from "@/lib/email/quote-sent";
-import { DepositType, QuoteStatus } from "@/generated/prisma/client";
+import { logActivity } from "@/app/(dashboard)/projects/[id]/log-activity";
+import { ActivityType, DepositType, QuoteStatus } from "@/generated/prisma/client";
 
 type LineItemInput = {
   description: string;
@@ -179,6 +180,18 @@ export async function sendQuote(quoteId: string): Promise<{
     data: {
       status: QuoteStatus.SENT,
       sentAt: new Date(),
+    },
+  });
+
+  await logActivity({
+    userId: user.id,
+    actorId: user.id,
+    action: ActivityType.QUOTE_SENT,
+    metadata: {
+      quoteId: quote.id,
+      quoteSubject: quote.subject,
+      total: quote.total,
+      recipientName,
     },
   });
 
