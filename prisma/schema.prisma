@@ -20,6 +20,7 @@ model User {
   welcomeMessage  String?
   stripeAccountId String?
   plan            Plan     @default(FREE)
+  firstPortalInviteSentAt DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -30,6 +31,7 @@ model User {
   meetings       Meeting[]
   leads          Lead[]
   quotes         Quote[]
+  activities     Activity[]
 
   @@map("users")
 }
@@ -347,15 +349,18 @@ enum InvoiceStatus {
 
 model Activity {
   id        String       @id @default(cuid())
-  projectId String
+  userId    String       // freelancer this activity belongs to
+  projectId String?      // null for pre-project events (quote sent, declined, viewed)
   actorId   String
   actorType ActorType
   action    ActivityType
   metadata  Json?
   createdAt DateTime     @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
   @@index([projectId])
   @@map("activities")
 }
@@ -371,6 +376,10 @@ enum ActivityType {
   COMMENT_ADDED
   INVOICE_SENT
   INVOICE_PAID
+  QUOTE_SENT
+  QUOTE_VIEWED
+  QUOTE_ACCEPTED
+  QUOTE_DECLINED
 }
 
 // ── Meetings ──────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { QuoteStatus } from "@/generated/prisma/client";
+import { ActivityType, ActorType, QuoteStatus } from "@/generated/prisma/client";
+import { logActivity } from "@/app/(dashboard)/projects/[id]/log-activity";
 import { QuoteViewer } from "./quote-viewer";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,17 @@ export default async function PublicQuotePage({
     });
     quote.status = QuoteStatus.VIEWED;
     quote.viewedAt = new Date();
+
+    await logActivity({
+      userId: quote.userId,
+      actorId: quote.id,
+      actorType: ActorType.CLIENT,
+      action: ActivityType.QUOTE_VIEWED,
+      metadata: {
+        quoteId: quote.id,
+        quoteSubject: quote.subject,
+      },
+    });
   }
 
   const recipient = quote.lead ?? quote.client;

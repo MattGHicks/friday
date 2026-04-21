@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { QuoteStatus } from "@/generated/prisma/client";
+import { ActivityType, ActorType, QuoteStatus } from "@/generated/prisma/client";
+import { logActivity } from "@/app/(dashboard)/projects/[id]/log-activity";
 import { acceptQuoteAndPrepareDeposit } from "@/lib/conversion";
 
 export async function acceptQuote(token: string): Promise<{
@@ -29,7 +30,7 @@ export async function declineQuote(token: string): Promise<{
 }> {
   const quote = await prisma.quote.findUnique({
     where: { publicToken: token },
-    select: { id: true, status: true },
+    select: { id: true, status: true, userId: true, subject: true },
   });
   if (!quote) return { error: "Quote not found" };
   if (quote.status === QuoteStatus.ACCEPTED)
@@ -40,6 +41,14 @@ export async function declineQuote(token: string): Promise<{
   await prisma.quote.update({
     where: { id: quote.id },
     data: { status: QuoteStatus.DECLINED, declinedAt: new Date() },
+  });
+
+  await logActivity({
+    userId: quote.userId,
+    actorId: quote.id,
+    actorType: ActorType.CLIENT,
+    action: ActivityType.QUOTE_DECLINED,
+    metadata: { quoteId: quote.id, quoteSubject: quote.subject },
   });
 
   revalidatePath(`/portal/quotes/${token}`);

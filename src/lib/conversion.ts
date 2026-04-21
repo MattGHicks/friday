@@ -117,16 +117,16 @@ export async function acceptQuoteAndPrepareDeposit(quoteId: string): Promise<{
       });
     }
 
-    // Activity trail on the new project so the dashboard feed + project
-    // detail page show where the work came from.
+    // QUOTE_ACCEPTED carries the quote + project context so dashboard and portal
+    // feeds can anchor on the moment of acceptance. Plus the deposit INVOICE_SENT.
     await tx.activity.create({
       data: {
+        userId: quote.userId,
         projectId: project.id,
         actorId: quote.userId,
         actorType: ActorType.USER,
-        action: ActivityType.PROJECT_CREATED,
+        action: ActivityType.QUOTE_ACCEPTED,
         metadata: {
-          source: "quote_accepted",
           quoteId: quote.id,
           quoteSubject: quote.subject,
           depositAmount: quote.depositAmount,
@@ -136,6 +136,7 @@ export async function acceptQuoteAndPrepareDeposit(quoteId: string): Promise<{
     });
     await tx.activity.create({
       data: {
+        userId: quote.userId,
         projectId: project.id,
         actorId: quote.userId,
         actorType: ActorType.USER,

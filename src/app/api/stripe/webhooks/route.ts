@@ -110,12 +110,13 @@ async function handleCheckoutSessionCompleted(
     },
   });
 
-  await logActivity(
-    invoice.projectId,
-    invoice.userId,
-    ActivityType.INVOICE_PAID,
-    { invoiceId, stripeSessionId: session.id }
-  );
+  await logActivity({
+    userId: invoice.userId,
+    projectId: invoice.projectId,
+    actorId: invoice.userId,
+    action: ActivityType.INVOICE_PAID,
+    metadata: { invoiceId, stripeSessionId: session.id },
+  });
 
   // Deposit paid → flip the linked project to ACTIVE and mark the quote.
   if (invoice.isDeposit && invoice.quoteId) {

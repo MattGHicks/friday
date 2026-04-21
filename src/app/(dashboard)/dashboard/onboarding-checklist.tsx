@@ -1,15 +1,23 @@
 import Link from "next/link";
-import { CheckCircle2, Circle, UserPlus, FolderOpen, Upload, Receipt, Share2 } from "lucide-react";
+import { CheckCircle2, Circle, User, UserPlus, FolderOpen, Upload, Receipt, Share2 } from "lucide-react";
 
 interface OnboardingChecklistProps {
+  hasDisplayName: boolean;
   hasClient: boolean;
   hasProject: boolean;
   hasFile: boolean;
   hasInvoice: boolean;
-  canSharePortal: boolean;
+  hasSharedPortal: boolean;
 }
 
 const steps = [
+  {
+    key: "hasDisplayName" as const,
+    label: "Add your display name",
+    description: "Shows in quote emails and your public quote links.",
+    href: "/settings",
+    icon: User,
+  },
   {
     key: "hasClient" as const,
     label: "Add your first client",
@@ -39,22 +47,23 @@ const steps = [
     icon: Receipt,
   },
   {
-    key: "canSharePortal" as const,
-    label: "Share the client portal",
-    description: "Invite your client so they can view their portal.",
+    key: "hasSharedPortal" as const,
+    label: "Invite a client to their portal",
+    description: "Send a magic-link invite so a client can see their project.",
     href: "/clients",
     icon: Share2,
   },
 ];
 
 export function OnboardingChecklist({
+  hasDisplayName,
   hasClient,
   hasProject,
   hasFile,
   hasInvoice,
-  canSharePortal,
+  hasSharedPortal,
 }: OnboardingChecklistProps) {
-  const completed = { hasClient, hasProject, hasFile, hasInvoice, canSharePortal };
+  const completed = { hasDisplayName, hasClient, hasProject, hasFile, hasInvoice, hasSharedPortal };
   const doneCount = Object.values(completed).filter(Boolean).length;
   const allDone = doneCount === steps.length;
 

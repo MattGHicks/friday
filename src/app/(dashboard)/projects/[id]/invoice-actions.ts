@@ -135,9 +135,12 @@ export async function updateInvoiceStatus(
   });
 
   if (status === InvoiceStatus.SENT) {
-    await logActivity(invoice.project.id, user.id, ActivityType.INVOICE_SENT, {
-      invoiceId,
-      total: invoice.total,
+    await logActivity({
+      userId: user.id,
+      projectId: invoice.project.id,
+      actorId: user.id,
+      action: ActivityType.INVOICE_SENT,
+      metadata: { invoiceId, total: invoice.total, isDeposit: invoice.isDeposit },
     });
 
     // Send email notification to client
@@ -189,9 +192,12 @@ export async function updateInvoiceStatus(
       console.error("[invoice-sent-email] failed to send:", err);
     }
   } else if (status === InvoiceStatus.PAID) {
-    await logActivity(invoice.project.id, user.id, ActivityType.INVOICE_PAID, {
-      invoiceId,
-      total: invoice.total,
+    await logActivity({
+      userId: user.id,
+      projectId: invoice.project.id,
+      actorId: user.id,
+      action: ActivityType.INVOICE_PAID,
+      metadata: { invoiceId, total: invoice.total },
     });
 
     // Deposit paid → activate the linked project and stamp the quote.
