@@ -153,12 +153,17 @@ export async function saveQuote(input: QuoteFormInput): Promise<{
   return { success: true, quoteId: created.id };
 }
 
-export async function sendQuote(quoteId: string): Promise<{
+export async function sendQuote(
+  quoteId: string,
+  options?: { customMessage?: string | null }
+): Promise<{
   error?: string;
   success?: boolean;
 }> {
   const user = await getCurrentUser();
   if (!user) return { error: "Not authenticated" };
+
+  const customMessage = options?.customMessage?.trim() || null;
 
   const quote = await prisma.quote.findFirst({
     where: { id: quoteId, userId: user.id },
@@ -199,8 +204,11 @@ export async function sendQuote(quoteId: string): Promise<{
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
     const publicUrl = `${appUrl}/portal/quotes/${quote.publicToken}`;
 
+    const freelancerDisplayName = user.name ?? user.email;
     const { subject, html, text } = buildQuoteSentEmail({
-      freelancerName: user.name ?? user.email,
+      freelancerName: freelancerDisplayName,
+      freelancerLogoUrl: user.logoUrl,
+      freelancerBrandColor: user.brandColor,
       clientName: recipientName,
       quoteSubject: quote.subject,
       totalCents: quote.total,
@@ -212,6 +220,7 @@ export async function sendQuote(quoteId: string): Promise<{
       })),
       publicUrl,
       notes: quote.notes,
+      customMessage,
     });
 
     const resend = getResend();
@@ -219,7 +228,8 @@ export async function sendQuote(quoteId: string): Promise<{
       console.warn("[quote-sent-email] Resend not configured — skipping");
     } else {
       await resend.emails.send({
-        from: "Friday <quotes@itsfriday.dev>",
+        from: `${freelancerDisplayName} <quotes@itsfriday.dev>`,
+        replyTo: user.email,
         to: recipientEmail,
         subject,
         html,

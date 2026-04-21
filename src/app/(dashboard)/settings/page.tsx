@@ -14,6 +14,7 @@ export default async function SettingsPage() {
       name: true,
       email: true,
       brandColor: true,
+      logoUrl: true,
       welcomeMessage: true,
       stripeAccountId: true,
       plan: true,

@@ -12,13 +12,7 @@ export default function PortalLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Minimal top bar */}
-      <header className="border-b border-border/40 px-6 py-3">
-        <span className="font-heading text-lg font-semibold tracking-tight text-gold">
-          friday
-        </span>
-      </header>
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">{children}</main>
+      {children}
       <footer className="border-t border-border/30 px-6 py-4 text-center">
         <span className="text-xs text-muted-foreground/50">
           Powered by{" "}

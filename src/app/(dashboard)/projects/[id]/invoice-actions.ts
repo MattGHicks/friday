@@ -163,8 +163,11 @@ export async function updateInvoiceStatus(
         unitPrice: number;
       }>;
 
+      const freelancerDisplayName = user.name ?? user.email;
       const { subject, html, text } = buildInvoiceSentEmail({
-        freelancerName: user.name ?? user.email,
+        freelancerName: freelancerDisplayName,
+        freelancerLogoUrl: user.logoUrl,
+        freelancerBrandColor: user.brandColor,
         clientName: clientDisplayName,
         projectName: invoice.project.name,
         invoiceId,
@@ -180,7 +183,8 @@ export async function updateInvoiceStatus(
         console.warn("[invoice-sent-email] Resend not configured — skipping");
       } else {
       await resend.emails.send({
-        from: "Friday <invoices@itsfriday.dev>",
+        from: `${freelancerDisplayName} <invoices@itsfriday.dev>`,
+        replyTo: user.email,
         to: invoice.client.email,
         subject,
         html,

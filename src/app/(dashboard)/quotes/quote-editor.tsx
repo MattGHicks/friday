@@ -92,6 +92,7 @@ export function QuoteEditorDialog({
         }))
       : [newLineItem()]
   );
+  const [customMessage, setCustomMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -139,7 +140,7 @@ export function QuoteEditorDialog({
         return;
       }
       if (options.sendAfter) {
-        const sent = await sendQuote(result.quoteId);
+        const sent = await sendQuote(result.quoteId, { customMessage });
         if (sent.error) {
           setError(sent.error);
           return;
@@ -296,6 +297,23 @@ export function QuoteEditorDialog({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Anything the recipient should know before accepting…"
+              className="resize-none text-sm"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quote-custom-message">
+              Personal message{" "}
+              <span className="font-normal text-muted-foreground">
+                (only sent when you send the quote)
+              </span>
+            </Label>
+            <Textarea
+              id="quote-custom-message"
+              rows={3}
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Hey Maria — really looking forward to this one. Let me know if you have any questions before signing off…"
               className="resize-none text-sm"
             />
           </div>

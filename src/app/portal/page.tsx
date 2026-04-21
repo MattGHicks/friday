@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { getPortalClient } from "@/lib/portal-auth";
 import type { ProjectStatus, InvoiceStatus } from "@/generated/prisma/client";
+import { PortalBrandHeader } from "@/components/portal/brand-header";
 import { PortalSignInForm } from "./sign-in-form";
 import { portalSignOut } from "./actions";
 
@@ -51,17 +52,22 @@ export default async function PortalHomePage({
 
   if (!client) {
     return (
-      <div className="mx-auto max-w-md py-10">
-        <div className="mb-6 text-center">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
-            Sign in to your portal
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Enter the email your designer invited you with.
-          </p>
-        </div>
-        <PortalSignInForm />
-      </div>
+      <>
+        <PortalBrandHeader freelancer={null} />
+        <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
+          <div className="mx-auto max-w-md py-10">
+            <div className="mb-6 text-center">
+              <h1 className="font-display text-2xl font-semibold tracking-tight">
+                Sign in to your portal
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Enter the email your designer invited you with.
+              </p>
+            </div>
+            <PortalSignInForm />
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -84,12 +90,20 @@ export default async function PortalHomePage({
     }),
     prisma.user.findUnique({
       where: { id: client.userId },
-      select: { welcomeMessage: true },
+      select: {
+        name: true,
+        logoUrl: true,
+        brandColor: true,
+        welcomeMessage: true,
+      },
     }),
   ]);
 
   return (
-    <div className="space-y-8">
+    <>
+      <PortalBrandHeader freelancer={freelancer ?? null} />
+      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
+        <div className="space-y-8">
       {paymentSuccess && (
         <div className="flex items-center gap-3 rounded-lg border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-sage">
           <CheckCircle className="h-5 w-5 shrink-0" strokeWidth={1.5} />
@@ -216,6 +230,8 @@ export default async function PortalHomePage({
           })}
         </div>
       )}
-    </div>
+        </div>
+      </main>
+    </>
   );
 }

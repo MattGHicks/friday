@@ -45,7 +45,14 @@ export async function uploadFile(
     where: { id: projectId, userId: user.id },
     include: {
       client: { select: { name: true, email: true } },
-      user: { select: { name: true, email: true } },
+      user: {
+        select: {
+          name: true,
+          email: true,
+          logoUrl: true,
+          brandColor: true,
+        },
+      },
     },
   });
   if (!project) return { error: "Project not found" };
@@ -106,14 +113,24 @@ export async function uploadFile(
   // Notify the client by email — fire-and-forget, never block the upload response
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://itsfriday.dev";
   const portalUrl = `${appUrl}/portal/projects/${projectId}`;
+  const freelancerDisplayName = project.user.name ?? project.user.email;
   const { subject, html, text } = buildFileUploadedEmail({
-    freelancerName: project.user.name ?? project.user.email,
+    freelancerName: freelancerDisplayName,
+    freelancerLogoUrl: project.user.logoUrl,
+    freelancerBrandColor: project.user.brandColor,
     clientName: project.client.name,
     projectName: project.name,
     fileName: file.name,
     portalUrl,
   });
-  sendEmail({ to: project.client.email, subject, html, text }).catch(
+  sendEmail({
+    to: project.client.email,
+    subject,
+    html,
+    text,
+    from: `${freelancerDisplayName} <hello@itsfriday.dev>`,
+    replyTo: project.user.email,
+  }).catch(
     (err) => void console.error("[uploadFile] email send failed:", err)
   );
 

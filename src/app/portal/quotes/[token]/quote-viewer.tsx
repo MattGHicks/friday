@@ -30,6 +30,7 @@ type QuoteViewerProps = {
     }[];
   };
   freelancerName: string;
+  brandColor: string;
   recipientName: string;
   recipientCompany: string | null;
 };
@@ -46,6 +47,7 @@ function formatDate(date: Date | string | null): string {
 export function QuoteViewer({
   quote,
   freelancerName,
+  brandColor,
   recipientName,
   recipientCompany,
 }: QuoteViewerProps) {
@@ -95,7 +97,11 @@ export function QuoteViewer({
           {quote.subject}
         </h1>
         <p className="mt-1 text-sm text-cream/60">
-          From <span className="text-gold">{freelancerName}</span> to{" "}
+          From{" "}
+          <span style={{ color: brandColor }} className="font-medium">
+            {freelancerName}
+          </span>{" "}
+          to{" "}
           <span className="text-cream">
             {recipientCompany ?? recipientName}
           </span>
@@ -174,7 +180,10 @@ export function QuoteViewer({
         <div className="border-t border-white/[0.04] px-5 py-4 space-y-1.5">
           <div className="flex items-center justify-between text-sm">
             <span className="text-cream/60">Total</span>
-            <span className="font-display text-xl font-bold text-gold tabular-nums">
+            <span
+              style={{ color: brandColor }}
+              className="font-display text-xl font-bold tabular-nums"
+            >
               {formatMoney(quote.total)}
             </span>
           </div>
@@ -213,7 +222,7 @@ export function QuoteViewer({
           <p className="mb-4 text-sm text-cream/70">
             Accepting this quote will kick off the project and generate a
             deposit invoice for{" "}
-            <span className="font-medium text-gold">
+            <span className="font-medium" style={{ color: brandColor }}>
               {formatMoney(quote.depositAmount)}
             </span>
             .
