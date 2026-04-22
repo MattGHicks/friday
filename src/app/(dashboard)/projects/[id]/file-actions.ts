@@ -12,6 +12,10 @@ import { createSystemMessage } from "@/lib/messaging";
 
 const BUCKET = "project-files";
 
+// Hard cap on file size — enough for typical design deliverables (PSDs, large PDFs,
+// video mock-ups) without accidentally letting someone upload a 10GB ISO.
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+
 function sanitizeFilename(name: string): string {
   return name
     .replace(/\s+/g, "-")
@@ -29,19 +33,86 @@ async function ensureBucket(supabase: ReturnType<typeof createAdminClient>) {
   }
 }
 
-export async function uploadFile(
-  formData: FormData
+/**
+ * Step 1 of upload flow: mint a signed upload URL.
+ *
+ * The client uploads the file bytes directly to Supabase Storage so the file
+ * never passes through Vercel's function body (which is capped at 4.5MB).
+ */
+export async function createUploadUrl(
+  projectId: string,
+  filename: string,
+  size: number
+): Promise<
+  | { error: string }
+  | { success: true; path: string; token: string; bucket: string }
+> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (!projectId) return { error: "Project ID is required" };
+  if (!filename) return { error: "Filename is required" };
+  if (!size || size <= 0) return { error: "File is empty" };
+  if (size > MAX_FILE_SIZE) {
+    return { error: `File is too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
+  }
+
+  // Verify project ownership before handing out an upload URL
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userId: user.id },
+    select: { id: true },
+  });
+  if (!project) return { error: "Project not found" };
+
+  const supabase = createAdminClient();
+
+  try {
+    await ensureBucket(supabase);
+  } catch {
+    return { error: "Storage is not available. Please try again." };
+  }
+
+  const sanitized = sanitizeFilename(filename);
+  const path = `${user.id}/${projectId}/${Date.now()}-${sanitized}`;
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    console.error("[createUploadUrl] failed:", error);
+    return { error: "Could not create upload URL. Please try again." };
+  }
+
+  return { success: true, path: data.path, token: data.token, bucket: BUCKET };
+}
+
+/**
+ * Step 2 of upload flow: record the uploaded file in the DB and run side
+ * effects (activity log, system message, email notification).
+ *
+ * Called after the client successfully PUTs bytes to the signed URL.
+ */
+export async function finalizeUpload(
+  projectId: string,
+  storagePath: string,
+  name: string,
+  size: number,
+  mimeType: string
 ): Promise<{ error?: string; success?: boolean }> {
   const user = await getCurrentUser();
   if (!user) return { error: "Not authenticated" };
 
-  const projectId = formData.get("projectId") as string | null;
-  const file = formData.get("file") as File | null;
-
   if (!projectId) return { error: "Project ID is required" };
-  if (!file || file.size === 0) return { error: "No file provided" };
+  if (!storagePath) return { error: "Missing storage path" };
 
-  // Verify project ownership and load client + user for email notification
+  // Guard: storagePath must belong to this user + project. createUploadUrl
+  // embeds `${userId}/${projectId}/...`, so anything else is a tampered request.
+  const expectedPrefix = `${user.id}/${projectId}/`;
+  if (!storagePath.startsWith(expectedPrefix)) {
+    return { error: "Invalid storage path" };
+  }
+
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: user.id },
     include: {
@@ -60,25 +131,15 @@ export async function uploadFile(
 
   const supabase = createAdminClient();
 
-  try {
-    await ensureBucket(supabase);
-  } catch {
-    return { error: "Storage is not available. Please try again." };
-  }
-
-  const sanitized = sanitizeFilename(file.name);
-  const storagePath = `${user.id}/${projectId}/${Date.now()}-${sanitized}`;
-
-  const arrayBuffer = await file.arrayBuffer();
-  const { error: uploadError } = await supabase.storage
+  // Confirm the object exists before we record it. Prevents orphan DB rows if
+  // the client claims to have uploaded but didn't.
+  const parentDir = storagePath.slice(0, storagePath.lastIndexOf("/"));
+  const baseName = storagePath.slice(storagePath.lastIndexOf("/") + 1);
+  const { data: listData, error: listError } = await supabase.storage
     .from(BUCKET)
-    .upload(storagePath, arrayBuffer, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    return { error: "Upload failed. Please try again." };
+    .list(parentDir, { limit: 1, search: baseName });
+  if (listError || !listData || listData.length === 0) {
+    return { error: "Upload was not received. Please try again." };
   }
 
   const {
@@ -91,10 +152,10 @@ export async function uploadFile(
         projectId,
         uploadedById: user.id,
         uploaderType: ActorType.USER,
-        name: file.name,
+        name,
         url: publicUrl,
-        size: file.size,
-        mimeType: file.type,
+        size,
+        mimeType,
       },
     });
   } catch {
@@ -108,13 +169,13 @@ export async function uploadFile(
     projectId,
     actorId: user.id,
     action: ActivityType.FILE_UPLOADED,
-    metadata: { fileName: file.name },
+    metadata: { fileName: name },
   });
 
   await createSystemMessage({
     projectId,
     type: "FILE_UPLOADED",
-    metadata: { fileName: file.name },
+    metadata: { fileName: name },
   });
 
   // Notify the client by email — fire-and-forget, never block the upload response
@@ -127,7 +188,7 @@ export async function uploadFile(
     freelancerBrandColor: project.user.brandColor,
     clientName: project.client.name,
     projectName: project.name,
-    fileName: file.name,
+    fileName: name,
     portalUrl,
   });
   sendEmail({
@@ -137,8 +198,13 @@ export async function uploadFile(
     text,
     from: `${freelancerDisplayName} <hello@itsfriday.dev>`,
     replyTo: project.user.email,
-  }).catch(
-    (err) => void console.error("[uploadFile] email send failed:", err)
+  }).then(
+    (result) => {
+      if (!result.success) {
+        console.error("[finalizeUpload] email send failed:", result.error);
+      }
+    },
+    (err) => console.error("[finalizeUpload] email send threw:", err)
   );
 
   revalidatePath(`/projects/${projectId}`);

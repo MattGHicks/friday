@@ -2,13 +2,27 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useFormStatus } from "react-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Upload, FileText, Image, File, Download, MessageSquare, Trash2, Star } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Image,
+  File,
+  Download,
+  MessageSquare,
+  Trash2,
+  Star,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { uploadFile, deleteFile, toggleDeliverable } from "./file-actions";
+import { createClient } from "@/lib/supabase/client";
+import {
+  createUploadUrl,
+  finalizeUpload,
+  deleteFile,
+  toggleDeliverable,
+} from "./file-actions";
 
 export type FileRecord = {
   id: string;
@@ -43,34 +57,6 @@ function FileTypeIcon({ mimeType }: { mimeType: string }) {
   return <File className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />;
 }
 
-// Inner component that reads useFormStatus for upload pending state
-function DropZoneContent() {
-  const { pending } = useFormStatus();
-
-  if (pending) {
-    return (
-      <>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
-        <p className="text-sm text-muted-foreground">Uploading…</p>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
-        <Upload className="h-5 w-5 text-gold" strokeWidth={1.5} />
-      </div>
-      <div>
-        <p className="text-sm font-medium">Drop files here or click to upload</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Images, PDFs, documents, and more
-        </p>
-      </div>
-    </>
-  );
-}
-
 export function FilesPanel({
   projectId,
   files: initialFiles,
@@ -82,9 +68,13 @@ export function FilesPanel({
   const [files, setFiles] = useState<FileRecord[]>(initialFiles);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [uploadState, setUploadState] = useState<
+    | { kind: "idle" }
+    | { kind: "uploading"; name: string; progress: number }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
   const [, startDeleteTransition] = useTransition();
   const [, startToggleTransition] = useTransition();
-  const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync when server re-renders with fresh data
@@ -92,13 +82,61 @@ export function FilesPanel({
     setFiles(initialFiles);
   }, [initialFiles]);
 
+  async function uploadOne(file: File) {
+    setUploadState({ kind: "uploading", name: file.name, progress: 0 });
+
+    // Step 1: mint a signed upload URL
+    const ticket = await createUploadUrl(projectId, file.name, file.size);
+    if ("error" in ticket) {
+      setUploadState({ kind: "error", message: ticket.error });
+      return;
+    }
+
+    // Step 2: upload bytes directly to Supabase Storage (bypasses Vercel 4.5MB limit)
+    const supabase = createClient();
+    const { error: uploadError } = await supabase.storage
+      .from(ticket.bucket)
+      .uploadToSignedUrl(ticket.path, ticket.token, file, {
+        contentType: file.type || "application/octet-stream",
+      });
+
+    if (uploadError) {
+      setUploadState({
+        kind: "error",
+        message: "Upload failed. Please try again.",
+      });
+      return;
+    }
+
+    // Step 3: record the file in the DB (plus activity/system message/email)
+    const result = await finalizeUpload(
+      projectId,
+      ticket.path,
+      file.name,
+      file.size,
+      file.type || "application/octet-stream"
+    );
+
+    if (result.error) {
+      setUploadState({ kind: "error", message: result.error });
+      return;
+    }
+
+    setUploadState({ kind: "idle" });
+    router.refresh();
+  }
+
   function handleDropZoneClick() {
+    if (uploadState.kind === "uploading") return;
     fileInputRef.current?.click();
   }
 
-  function handleFileChange() {
-    if (!fileInputRef.current?.files?.length) return;
-    formRef.current?.requestSubmit();
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    void uploadOne(picked);
+    // Reset so selecting the same file twice re-triggers
+    e.target.value = "";
   }
 
   function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
@@ -107,14 +145,10 @@ export function FilesPanel({
 
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
-    const droppedFiles = e.dataTransfer.files;
-    if (!droppedFiles.length || !fileInputRef.current) return;
-
-    // DataTransfer → FileList cannot be assigned directly; use a DataTransfer object
-    const dt = new DataTransfer();
-    dt.items.add(droppedFiles[0]);
-    fileInputRef.current.files = dt.files;
-    formRef.current?.requestSubmit();
+    if (uploadState.kind === "uploading") return;
+    const dropped = e.dataTransfer.files?.[0];
+    if (!dropped) return;
+    void uploadOne(dropped);
   }
 
   async function handleToggleDeliverable(fileId: string) {
@@ -142,29 +176,58 @@ export function FilesPanel({
     });
   }
 
+  const uploading = uploadState.kind === "uploading";
+
   return (
     <div className="space-y-4">
-      <form ref={formRef} action={uploadFile as (formData: FormData) => void}>
-        <input type="hidden" name="projectId" value={projectId} />
-        <input
-          ref={fileInputRef}
-          type="file"
-          name="file"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={handleDropZoneClick}
-          onKeyDown={(e) => e.key === "Enter" && handleDropZoneClick()}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 px-6 py-8 text-center transition-colors duration-200 hover:border-gold/40 hover:bg-gold/5"
-        >
-          <DropZoneContent />
-        </div>
-      </form>
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        aria-disabled={uploading}
+        onClick={handleDropZoneClick}
+        onKeyDown={(e) => e.key === "Enter" && handleDropZoneClick()}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={[
+          "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors duration-200",
+          uploading
+            ? "cursor-not-allowed border-gold/40 bg-gold/5"
+            : "cursor-pointer border-border/60 hover:border-gold/40 hover:bg-gold/5",
+        ].join(" ")}
+      >
+        {uploading ? (
+          <>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
+            <p className="text-sm text-muted-foreground">
+              Uploading {uploadState.name}…
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
+              <Upload className="h-5 w-5 text-gold" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                Drop files here or click to upload
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Images, PDFs, documents, and more — up to 500MB
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {uploadState.kind === "error" && (
+        <p className="text-sm text-coral">{uploadState.message}</p>
+      )}
 
       {/* File list */}
       {files.length === 0 ? (
