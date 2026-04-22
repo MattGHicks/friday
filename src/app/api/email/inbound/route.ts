@@ -129,8 +129,10 @@ export async function POST(req: NextRequest) {
       project: {
         select: {
           id: true,
+          userId: true,
           clientId: true,
           client: { select: { id: true, email: true, name: true } },
+          user: { select: { id: true, email: true, name: true } },
         },
       },
     },
@@ -162,18 +164,28 @@ export async function POST(req: NextRequest) {
   const BODY_CAP = 10_000;
   const truncated = body.length > BODY_CAP ? body.slice(0, BODY_CAP) : body;
 
-  // Is this the known client? Match case-insensitive.
+  // Classify by sender email: freelancer-origin → USER, anyone else → CLIENT.
+  // This lets both sides reply-round-trip into the same thread.
+  const fromEmail = from.email.toLowerCase();
+  const isFreelancer =
+    thread.project.user.email.toLowerCase() === fromEmail;
   const knownClient =
-    thread.project.client.email.toLowerCase() === from.email.toLowerCase()
+    thread.project.client.email.toLowerCase() === fromEmail
       ? thread.project.client
       : null;
 
   await prisma.message.create({
     data: {
       threadId: thread.id,
-      authorType: MessageAuthorType.CLIENT,
-      authorClientId: knownClient?.id ?? null,
-      authorName: from.name ?? knownClient?.name ?? null,
+      authorType: isFreelancer
+        ? MessageAuthorType.USER
+        : MessageAuthorType.CLIENT,
+      authorUserId: isFreelancer ? thread.project.user.id : null,
+      authorClientId: isFreelancer ? null : knownClient?.id ?? null,
+      authorName:
+        from.name ??
+        (isFreelancer ? thread.project.user.name : knownClient?.name) ??
+        null,
       authorEmail: from.email,
       body: truncated,
     },

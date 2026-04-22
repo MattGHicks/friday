@@ -60,15 +60,28 @@ export async function sendFreelancerMessage(
     portalUrl,
   });
 
-  void sendEmail({
+  // Use a stable mailbox as From (plus-addressed senders trip spam filters
+  // and some provider validation). The reply token goes in Reply-To only —
+  // Gmail and friends honor Reply-To when the user hits Reply, so inbound
+  // routing still works.
+  sendEmail({
     to: project.client.email,
     subject,
     html,
     text,
-    from: `${freelancerDisplayName} <${replyToAddressFor(thread.inboundToken)}>`,
+    from: `${freelancerDisplayName} <messages@itsfriday.dev>`,
     replyTo: replyToAddressFor(thread.inboundToken),
-  }).catch((err) =>
-    console.error("[sendFreelancerMessage] email send failed:", err)
+  }).then(
+    (result) => {
+      if (!result.success) {
+        console.error(
+          "[sendFreelancerMessage] email send failed:",
+          result.error
+        );
+      }
+    },
+    (err) =>
+      console.error("[sendFreelancerMessage] email send threw:", err)
   );
 
   revalidatePath(`/projects/${projectId}`);

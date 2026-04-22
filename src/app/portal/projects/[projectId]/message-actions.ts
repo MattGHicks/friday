@@ -68,15 +68,25 @@ export async function sendClientMessage(
     portalUrl: freelancerUrl,
   });
 
-  void sendEmail({
+  // Use a stable From mailbox; the reply token goes in Reply-To so inbound
+  // routing still works when the freelancer hits Reply in their mail client.
+  sendEmail({
     to: project.user.email,
     subject,
     html,
     text,
-    from: `${client.name} <${replyToAddressFor(thread.inboundToken)}>`,
-    replyTo: client.email,
-  }).catch((err) =>
-    console.error("[sendClientMessage] email send failed:", err)
+    from: `${client.name} <messages@itsfriday.dev>`,
+    replyTo: replyToAddressFor(thread.inboundToken),
+  }).then(
+    (result) => {
+      if (!result.success) {
+        console.error(
+          "[sendClientMessage] email send failed:",
+          result.error
+        );
+      }
+    },
+    (err) => console.error("[sendClientMessage] email send threw:", err)
   );
 
   revalidatePath(`/portal/projects/${projectId}`);
