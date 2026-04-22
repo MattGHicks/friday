@@ -1,14 +1,27 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Plus, Trash2, FileText, Send, CheckCircle2, Download } from "lucide-react";
+import { useState, useCallback, useTransition } from "react";
+import {
+  Plus,
+  Trash2,
+  FileText,
+  Send,
+  CheckCircle2,
+  Download,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { createInvoice, updateInvoiceStatus, deleteInvoice } from "./invoice-actions";
+import {
+  createInvoice,
+  updateInvoiceStatus,
+  deleteInvoice,
+  createRemainingInvoiceFromQuote,
+} from "./invoice-actions";
 import { formatMoney } from "@/lib/format";
 
 export type InvoiceRecord = {
@@ -20,7 +33,14 @@ export type InvoiceRecord = {
   dueDate: Date | null;
   notes: string | null;
   lineItems: unknown; // Json
+  isDeposit: boolean;
   createdAt: Date;
+};
+
+export type RemainingBalancePrompt = {
+  quoteId: string;
+  quoteSubject: string;
+  remainingCents: number;
 };
 
 type LineItemDraft = {
@@ -345,6 +365,14 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
   const [pending, setPending] = useState(false);
   const config = STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG.DRAFT;
   const shortId = invoice.id.slice(0, 8).toUpperCase();
+  const depositBadge = invoice.isDeposit ? (
+    <Badge
+      variant="outline"
+      className="border-fire/30 bg-fire/10 text-[10px] text-fire"
+    >
+      Deposit
+    </Badge>
+  ) : null;
 
   async function handleMarkSent() {
     setPending(true);
@@ -371,6 +399,7 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
           >
             {config.label}
           </Badge>
+          {depositBadge}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>Created {formatDate(invoice.createdAt)}</span>
@@ -454,64 +483,80 @@ function InvoiceRow({ invoice }: { invoice: InvoiceRecord }) {
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 
+function RemainingBalanceCta({
+  prompt,
+}: {
+  prompt: RemainingBalancePrompt;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleClick() {
+    setError(null);
+    startTransition(async () => {
+      const result = await createRemainingInvoiceFromQuote(prompt.quoteId);
+      if (result.error) setError(result.error);
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-gold/30 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gold/15">
+          <Sparkles className="h-4 w-4 text-gold" strokeWidth={1.5} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="text-sm font-medium text-foreground">
+            Deposit paid — time to bill the remainder
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {formatMoney(prompt.remainingCents)} left on {prompt.quoteSubject}.
+            We'll create a draft you can review before sending.
+          </p>
+          {error && (
+            <p className="mt-1 text-xs text-coral">{error}</p>
+          )}
+        </div>
+      </div>
+      <Button
+        size="sm"
+        onClick={handleClick}
+        disabled={isPending}
+        className="shrink-0 self-start sm:self-auto"
+      >
+        {isPending ? "Creating…" : `Create ${formatMoney(prompt.remainingCents)} invoice`}
+      </Button>
+    </div>
+  );
+}
+
 export function InvoicesPanel({
   projectId,
   clientId,
   invoices,
+  remainingBalancePrompt,
 }: {
   projectId: string;
   clientId: string;
   invoices: InvoiceRecord[];
+  remainingBalancePrompt?: RemainingBalancePrompt | null;
 }) {
   const [showForm, setShowForm] = useState(false);
 
-  const totalPaid = invoices
-    .filter((inv) => inv.status === "PAID")
-    .reduce((sum, inv) => sum + inv.total, 0);
-
-  const totalOutstanding = invoices
-    .filter((inv) => inv.status === "SENT" || inv.status === "VIEWED" || inv.status === "OVERDUE")
-    .reduce((sum, inv) => sum + inv.total, 0);
-
   return (
     <div className="animate-fade-up flex flex-col gap-4">
-      {/* Summary row — only when there are invoices */}
-      {invoices.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-border/40 bg-card/60 px-4 py-3">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Total invoiced
-            </p>
-            <p className="mt-1 font-heading text-xl font-semibold tabular-nums">
-              {formatMoney(invoices.reduce((sum, inv) => sum + inv.total, 0))}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/40 bg-card/60 px-4 py-3">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Outstanding
-            </p>
-            <p className="mt-1 font-heading text-xl font-semibold tabular-nums text-gold">
-              {formatMoney(totalOutstanding)}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/40 bg-card/60 px-4 py-3">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Paid
-            </p>
-            <p className="mt-1 font-heading text-xl font-semibold tabular-nums text-sage">
-              {formatMoney(totalPaid)}
-            </p>
-          </div>
-        </div>
+      {/* Remaining-balance CTA (deposit paid, nothing billed for the rest yet) */}
+      {remainingBalancePrompt && (
+        <RemainingBalanceCta prompt={remainingBalancePrompt} />
       )}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <h2 className="font-heading text-sm font-semibold text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {invoices.length === 0
             ? "No invoices yet"
             : `${invoices.length} invoice${invoices.length === 1 ? "" : "s"}`}
-        </h2>
+        </p>
         {!showForm && (
           <Button
             size="sm"

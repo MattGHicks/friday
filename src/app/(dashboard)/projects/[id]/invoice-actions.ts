@@ -236,3 +236,63 @@ export async function updateInvoiceStatus(
   revalidatePath("/invoices");
   return { success: true };
 }
+
+/**
+ * Create the "remaining balance" invoice after a deposit has been paid.
+ *
+ * Computes: remaining = quote.total - sum(existing invoices linked to this quote)
+ * Pre-fills a single line item on a DRAFT invoice so the freelancer can review
+ * and send. Keeps the audit trail by linking back to the original quote.
+ */
+export async function createRemainingInvoiceFromQuote(
+  quoteId: string
+): Promise<{ error?: string; success?: boolean; invoiceId?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const quote = await prisma.quote.findFirst({
+    where: { id: quoteId, userId: user.id },
+    include: {
+      invoices: { select: { total: true, projectId: true, clientId: true } },
+    },
+  });
+  if (!quote) return { error: "Quote not found" };
+  if (!quote.clientId) return { error: "Quote has no client yet" };
+
+  const invoicedCents = quote.invoices.reduce((sum, inv) => sum + inv.total, 0);
+  const remaining = quote.total - invoicedCents;
+  if (remaining <= 0) {
+    return { error: "Nothing left to invoice on this quote" };
+  }
+
+  // Find the project linked via the deposit invoice
+  const projectId = quote.invoices[0]?.projectId;
+  if (!projectId) return { error: "No project linked to this quote" };
+
+  const invoice = await prisma.invoice.create({
+    data: {
+      projectId,
+      clientId: quote.clientId,
+      userId: user.id,
+      quoteId: quote.id,
+      isDeposit: false,
+      lineItems: [
+        {
+          id: `remaining-${Date.now()}`,
+          description: `Remaining balance — ${quote.subject}`,
+          quantity: 1,
+          unitPrice: remaining,
+        },
+      ],
+      subtotal: remaining,
+      tax: 0,
+      total: remaining,
+      status: InvoiceStatus.DRAFT,
+      notes: null,
+    },
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/invoices");
+  return { success: true, invoiceId: invoice.id };
+}

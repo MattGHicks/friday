@@ -6,8 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import {
   Upload,
   FileText,
-  Image,
-  File,
+  Image as ImageIcon,
+  File as FileIcon,
   Download,
   MessageSquare,
   Trash2,
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import {
   createUploadUrl,
@@ -40,9 +39,13 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function isImage(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
+
 function FileTypeIcon({ mimeType }: { mimeType: string }) {
-  if (mimeType.startsWith("image/")) {
-    return <Image className="h-5 w-5 shrink-0 text-gold" strokeWidth={1.5} />;
+  if (isImage(mimeType)) {
+    return <ImageIcon className="h-5 w-5 shrink-0 text-gold" strokeWidth={1.5} />;
   }
   if (
     mimeType === "application/pdf" ||
@@ -52,10 +55,19 @@ function FileTypeIcon({ mimeType }: { mimeType: string }) {
     mimeType.includes("sheet") ||
     mimeType.includes("presentation")
   ) {
-    return <FileText className="h-5 w-5 shrink-0 text-sunset" strokeWidth={1.5} />;
+    return (
+      <FileText className="h-5 w-5 shrink-0 text-sunset" strokeWidth={1.5} />
+    );
   }
-  return <File className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />;
+  return (
+    <FileIcon
+      className="h-5 w-5 shrink-0 text-muted-foreground"
+      strokeWidth={1.5}
+    />
+  );
 }
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 export function FilesPanel({
   projectId,
@@ -70,36 +82,34 @@ export function FilesPanel({
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [uploadState, setUploadState] = useState<
     | { kind: "idle" }
-    | { kind: "uploading"; name: string; progress: number }
+    | { kind: "uploading"; name: string }
     | { kind: "error"; message: string }
   >({ kind: "idle" });
   const [, startDeleteTransition] = useTransition();
   const [, startToggleTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Sync when server re-renders with fresh data
   useEffect(() => {
     setFiles(initialFiles);
   }, [initialFiles]);
 
   async function uploadOne(file: File) {
-    setUploadState({ kind: "uploading", name: file.name, progress: 0 });
+    setUploadState({ kind: "uploading", name: file.name });
 
-    // Step 1: mint a signed upload URL
     const ticket = await createUploadUrl(projectId, file.name, file.size);
     if ("error" in ticket) {
       setUploadState({ kind: "error", message: ticket.error });
       return;
     }
 
-    // Step 2: upload bytes directly to Supabase Storage (bypasses Vercel 4.5MB limit)
     const supabase = createClient();
     const { error: uploadError } = await supabase.storage
       .from(ticket.bucket)
       .uploadToSignedUrl(ticket.path, ticket.token, file, {
         contentType: file.type || "application/octet-stream",
       });
-
     if (uploadError) {
       setUploadState({
         kind: "error",
@@ -108,7 +118,6 @@ export function FilesPanel({
       return;
     }
 
-    // Step 3: record the file in the DB (plus activity/system message/email)
     const result = await finalizeUpload(
       projectId,
       ticket.path,
@@ -116,7 +125,6 @@ export function FilesPanel({
       file.size,
       file.type || "application/octet-stream"
     );
-
     if (result.error) {
       setUploadState({ kind: "error", message: result.error });
       return;
@@ -126,25 +134,33 @@ export function FilesPanel({
     router.refresh();
   }
 
-  function handleDropZoneClick() {
-    if (uploadState.kind === "uploading") return;
-    fileInputRef.current?.click();
-  }
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
     if (!picked) return;
     void uploadOne(picked);
-    // Reset so selecting the same file twice re-triggers
     e.target.value = "";
   }
 
-  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current += 1;
+    if (dragCounter.current === 1) setIsDragging(true);
+  }
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsDragging(false);
+    }
+  }
+  function handleDragOver(e: React.DragEvent) {
     e.preventDefault();
   }
-
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+  function handleDrop(e: React.DragEvent) {
     e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
     if (uploadState.kind === "uploading") return;
     const dropped = e.dataTransfer.files?.[0];
     if (!dropped) return;
@@ -166,7 +182,6 @@ export function FilesPanel({
   }
 
   async function handleDelete(fileId: string) {
-    // Optimistic removal
     setDeletingId(fileId);
     setFiles((prev) => prev.filter((f) => f.id !== fileId));
     startDeleteTransition(async () => {
@@ -177,170 +192,392 @@ export function FilesPanel({
   }
 
   const uploading = uploadState.kind === "uploading";
+  const deliverables = files.filter((f) => f.isDeliverable);
+  const workingFiles = files.filter((f) => !f.isDeliverable);
+  const hasFiles = files.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className="relative flex flex-col gap-6"
+    >
+      {/* Hidden input shared by all upload triggers */}
       <input
         ref={fileInputRef}
         type="file"
         className="hidden"
         onChange={handleFileChange}
       />
-      <div
-        role="button"
-        tabIndex={0}
-        aria-disabled={uploading}
-        onClick={handleDropZoneClick}
-        onKeyDown={(e) => e.key === "Enter" && handleDropZoneClick()}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        className={[
-          "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-8 text-center transition-colors duration-200",
-          uploading
-            ? "cursor-not-allowed border-gold/40 bg-gold/5"
-            : "cursor-pointer border-border/60 hover:border-gold/40 hover:bg-gold/5",
-        ].join(" ")}
-      >
-        {uploading ? (
-          <>
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
-            <p className="text-sm text-muted-foreground">
-              Uploading {uploadState.name}…
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
-              <Upload className="h-5 w-5 text-gold" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-sm font-medium">
-                Drop files here or click to upload
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Images, PDFs, documents, and more — up to 500MB
-              </p>
-            </div>
-          </>
-        )}
-      </div>
 
-      {uploadState.kind === "error" && (
-        <p className="text-sm text-coral">{uploadState.message}</p>
-      )}
-
-      {/* File list */}
-      {files.length === 0 ? (
-        <Card className="border-border/40">
-          <CardContent className="flex flex-col items-center py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gold/10">
-              <Upload className="h-6 w-6 text-gold" strokeWidth={1.5} />
-            </div>
-            <h3 className="mt-4 font-heading text-base font-semibold">No files yet</h3>
-            <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-              Upload deliverables, references, or assets for this project.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-1.5">
-          {files.map((file) => (
-            <Card
-              key={file.id}
-              className={[
-                "border-border/40 transition-opacity duration-150",
-                deletingId === file.id ? "opacity-40" : "",
-              ].join(" ")}
-            >
-              <CardContent className="flex items-center gap-3 px-4 py-3">
-                {/* Icon */}
-                <FileTypeIcon mimeType={file.mimeType} />
-
-                {/* Name + meta */}
-                <div className="min-w-0 flex-1">
-                  <p
-                    className="truncate text-sm font-medium leading-tight"
-                    title={file.name}
-                  >
-                    {file.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {formatBytes(file.size)} ·{" "}
-                    {formatDistanceToNow(new Date(file.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-8 w-8 transition-colors ${
-                      file.isDeliverable
-                        ? "text-gold hover:text-gold/70"
-                        : "text-muted-foreground hover:text-gold"
-                    }`}
-                    onClick={() => handleToggleDeliverable(file.id)}
-                    disabled={togglingId === file.id}
-                    title={
-                      file.isDeliverable
-                        ? "Remove from deliverables"
-                        : "Mark as deliverable"
-                    }
-                  >
-                    <Star
-                      className="h-4 w-4"
-                      strokeWidth={1.5}
-                      fill={file.isDeliverable ? "currentColor" : "none"}
-                    />
-                    <span className="sr-only">
-                      {file.isDeliverable ? "Remove from" : "Add to"} deliverables
-                    </span>
-                  </Button>
-                  {file.mimeType.startsWith("image/") && (
-                    <a
-                      href={`/projects/${projectId}/review/${file.id}`}
-                      className={
-                        buttonVariants({ variant: "ghost", size: "icon" }) +
-                        " h-8 w-8 text-muted-foreground hover:text-gold"
-                      }
-                      title="Open review"
-                    >
-                      <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
-                      <span className="sr-only">Review {file.name}</span>
-                    </a>
-                  )}
-                  <a
-                    href={file.url}
-                    download
-                    target="_blank"
-                    rel="noreferrer"
-                    className={
-                      buttonVariants({ variant: "ghost", size: "icon" }) +
-                      " h-8 w-8 text-muted-foreground hover:text-foreground"
-                    }
-                  >
-                    <Download className="h-4 w-4" strokeWidth={1.5} />
-                    <span className="sr-only">Download {file.name}</span>
-                  </a>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDelete(file.id)}
-                    disabled={deletingId === file.id}
-                  >
-                    <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                    <span className="sr-only">Delete {file.name}</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Drag overlay — shows when user drags a file anywhere over this panel */}
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-gold bg-gold/10 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-2">
+            <Upload className="h-8 w-8 text-gold" strokeWidth={1.5} />
+            <p className="text-sm font-medium text-gold">Drop to upload</p>
+          </div>
         </div>
       )}
+
+      {/* Upload banner — prominent when empty, compact button when files exist */}
+      {!hasFiles ? (
+        <EmptyDropzone
+          onClick={() => !uploading && fileInputRef.current?.click()}
+          uploading={uploading}
+          uploadingName={uploading ? uploadState.name : null}
+        />
+      ) : (
+        <div className="flex items-center justify-between rounded-md border border-border/40 bg-surface-1/40 px-3 py-2">
+          {uploading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
+              <span>Uploading {uploadState.name}…</span>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground/80">
+              Drag a file anywhere in this section, or use the button →
+            </p>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="gap-1.5"
+          >
+            <Upload className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Upload
+          </Button>
+        </div>
+      )}
+
+      {uploadState.kind === "error" && (
+        <p className="rounded-md bg-coral/10 px-3 py-2 text-sm text-coral">
+          {uploadState.message}
+        </p>
+      )}
+
+      {/* Deliverables — the starred files, shown first as a small visual grid */}
+      {deliverables.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-baseline gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gold">
+              Deliverables
+            </h3>
+            <span className="text-xs text-muted-foreground/60">
+              {deliverables.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {deliverables.map((file) => (
+              <DeliverableCard
+                key={file.id}
+                file={file}
+                projectId={projectId}
+                onToggle={handleToggleDeliverable}
+                onDelete={handleDelete}
+                isDeleting={deletingId === file.id}
+                isToggling={togglingId === file.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Working files — list view */}
+      {workingFiles.length > 0 && (
+        <div>
+          {deliverables.length > 0 && (
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Working files
+            </h3>
+          )}
+          <div className="flex flex-col gap-1">
+            {workingFiles.map((file) => (
+              <FileRow
+                key={file.id}
+                file={file}
+                projectId={projectId}
+                onToggle={handleToggleDeliverable}
+                onDelete={handleDelete}
+                isDeleting={deletingId === file.id}
+                isToggling={togglingId === file.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Empty-state dropzone (big, inviting) ─────────────────────────────────────
+
+function EmptyDropzone({
+  onClick,
+  uploading,
+  uploadingName,
+}: {
+  onClick: () => void;
+  uploading: boolean;
+  uploadingName: string | null;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => e.key === "Enter" && onClick()}
+      className={[
+        "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-10 text-center transition-colors duration-200",
+        uploading
+          ? "cursor-not-allowed border-gold/40 bg-gold/5"
+          : "cursor-pointer border-border/60 hover:border-gold/40 hover:bg-gold/5",
+      ].join(" ")}
+    >
+      {uploading ? (
+        <>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
+          <p className="text-sm text-muted-foreground">
+            Uploading {uploadingName}…
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/10">
+            <Upload className="h-5 w-5 text-gold" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-sm font-medium">
+              Drop files here or click to upload
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Images, PDFs, documents — up to 500MB
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Deliverable card (visual) ────────────────────────────────────────────────
+
+function DeliverableCard({
+  file,
+  projectId,
+  onToggle,
+  onDelete,
+  isDeleting,
+  isToggling,
+}: {
+  file: FileRecord;
+  projectId: string;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  isDeleting: boolean;
+  isToggling: boolean;
+}) {
+  const image = isImage(file.mimeType);
+
+  return (
+    <div
+      className={[
+        "group relative flex flex-col overflow-hidden rounded-lg border border-gold/20 bg-gold/[0.03] transition-all duration-150",
+        isDeleting ? "opacity-40" : "hover:border-gold/40",
+      ].join(" ")}
+    >
+      <div className="relative aspect-[4/3] w-full bg-surface-1/60">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={file.url}
+            alt={file.name}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <FileTypeIcon mimeType={file.mimeType} />
+          </div>
+        )}
+        {/* Hover action bar */}
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-gradient-to-t from-black/80 to-transparent px-2 py-2 opacity-0 transition-opacity group-hover:opacity-100">
+          {image && (
+            <a
+              href={`/projects/${projectId}/review/${file.id}`}
+              title="Open review"
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-black/40 text-white hover:bg-black/60"
+            >
+              <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </a>
+          )}
+          <a
+            href={file.url}
+            download
+            target="_blank"
+            rel="noreferrer"
+            title="Download"
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-black/40 text-white hover:bg-black/60"
+          >
+            <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </a>
+          <button
+            type="button"
+            onClick={() => onToggle(file.id)}
+            disabled={isToggling}
+            title="Remove from deliverables"
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-black/40 text-gold hover:bg-black/60"
+          >
+            <Star className="h-3.5 w-3.5" strokeWidth={1.5} fill="currentColor" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(file.id)}
+            disabled={isDeleting}
+            title="Delete"
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-black/40 text-white hover:bg-coral/60"
+          >
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+      <div className="px-3 py-2">
+        <p className="truncate text-xs font-medium" title={file.name}>
+          {file.name}
+        </p>
+        <p className="text-[10px] text-muted-foreground/80">
+          {formatBytes(file.size)} ·{" "}
+          {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── File row (list view, for working files) ──────────────────────────────────
+
+function FileRow({
+  file,
+  projectId,
+  onToggle,
+  onDelete,
+  isDeleting,
+  isToggling,
+}: {
+  file: FileRecord;
+  projectId: string;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  isDeleting: boolean;
+  isToggling: boolean;
+}) {
+  const image = isImage(file.mimeType);
+
+  return (
+    <div
+      className={[
+        "group flex items-center gap-3 rounded-md border border-border/40 bg-card/60 px-3 py-2 transition-colors duration-150",
+        isDeleting ? "opacity-40" : "hover:bg-card/80",
+      ].join(" ")}
+    >
+      {/* Thumbnail or icon */}
+      {image ? (
+        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border/40 bg-surface-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={file.url}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-1">
+          <FileTypeIcon mimeType={file.mimeType} />
+        </div>
+      )}
+
+      {/* Name + meta */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium" title={file.name}>
+          {file.name}
+        </p>
+        <p className="text-[11px] text-muted-foreground/80">
+          {formatBytes(file.size)} ·{" "}
+          {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 transition-colors ${
+            file.isDeliverable
+              ? "text-gold hover:text-gold/70"
+              : "text-muted-foreground hover:text-gold"
+          }`}
+          onClick={() => onToggle(file.id)}
+          disabled={isToggling}
+          title={
+            file.isDeliverable
+              ? "Remove from deliverables"
+              : "Mark as deliverable"
+          }
+        >
+          <Star
+            className="h-3.5 w-3.5"
+            strokeWidth={1.5}
+            fill={file.isDeliverable ? "currentColor" : "none"}
+          />
+          <span className="sr-only">
+            {file.isDeliverable ? "Remove from" : "Add to"} deliverables
+          </span>
+        </Button>
+        {image && (
+          <a
+            href={`/projects/${projectId}/review/${file.id}`}
+            className={
+              buttonVariants({ variant: "ghost", size: "icon" }) +
+              " h-7 w-7 text-muted-foreground hover:text-gold"
+            }
+            title="Open review"
+          >
+            <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <span className="sr-only">Review {file.name}</span>
+          </a>
+        )}
+        <a
+          href={file.url}
+          download
+          target="_blank"
+          rel="noreferrer"
+          className={
+            buttonVariants({ variant: "ghost", size: "icon" }) +
+            " h-7 w-7 text-muted-foreground hover:text-foreground"
+          }
+          title="Download"
+        >
+          <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <span className="sr-only">Download {file.name}</span>
+        </a>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          onClick={() => onDelete(file.id)}
+          disabled={isDeleting}
+          title="Delete"
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <span className="sr-only">Delete {file.name}</span>
+        </Button>
+      </div>
     </div>
   );
 }
