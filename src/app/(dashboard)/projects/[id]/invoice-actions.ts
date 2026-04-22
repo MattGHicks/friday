@@ -11,6 +11,7 @@ import {
 import { logActivity } from "./log-activity";
 import { getResend } from "@/lib/resend";
 import { buildInvoiceSentEmail } from "@/lib/email/invoice-sent";
+import { createSystemMessage } from "@/lib/messaging";
 
 type LineItem = {
   id: string;
@@ -142,6 +143,15 @@ export async function updateInvoiceStatus(
       action: ActivityType.INVOICE_SENT,
       metadata: { invoiceId, total: invoice.total, isDeposit: invoice.isDeposit },
     });
+    await createSystemMessage({
+      projectId: invoice.project.id,
+      type: "INVOICE_SENT",
+      metadata: {
+        invoiceId,
+        total: invoice.total,
+        isDeposit: invoice.isDeposit,
+      },
+    });
 
     // Send email notification to client
     try {
@@ -201,6 +211,11 @@ export async function updateInvoiceStatus(
       projectId: invoice.project.id,
       actorId: user.id,
       action: ActivityType.INVOICE_PAID,
+      metadata: { invoiceId, total: invoice.total },
+    });
+    await createSystemMessage({
+      projectId: invoice.project.id,
+      type: "INVOICE_PAID",
       metadata: { invoiceId, total: invoice.total },
     });
 

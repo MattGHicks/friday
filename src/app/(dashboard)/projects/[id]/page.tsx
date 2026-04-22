@@ -8,6 +8,7 @@ import { FilesPanel } from "./files-panel";
 import { InvoicesPanel } from "./invoices-panel";
 import { ProjectHeaderActions } from "./project-header-actions";
 import { ActivityPanel } from "./activity-panel";
+import { MessagesPanel, type MessageRecord } from "./messages-panel";
 import type { InvoiceRecord } from "./invoices-panel";
 import type { ActivityRecord } from "./activity-panel";
 import type { ProjectStatus } from "@/generated/prisma/client";
@@ -36,6 +37,11 @@ export default async function ProjectDetailPage({
         files: { orderBy: { createdAt: "desc" } },
         invoices: { orderBy: { createdAt: "desc" } },
         activities: { orderBy: { createdAt: "desc" }, take: 50 },
+        thread: {
+          include: {
+            messages: { orderBy: { createdAt: "asc" } },
+          },
+        },
       },
     }),
     prisma.client.findMany({
@@ -46,6 +52,17 @@ export default async function ProjectDetailPage({
   ]);
 
   if (!project) notFound();
+
+  const messages: MessageRecord[] = (project.thread?.messages ?? []).map((m) => ({
+    id: m.id,
+    authorType: m.authorType,
+    authorName: m.authorName,
+    authorEmail: m.authorEmail,
+    body: m.body,
+    systemEventType: m.systemEventType,
+    systemMetadata: m.systemMetadata,
+    createdAt: m.createdAt,
+  }));
 
   const status = STATUS_CONFIG[project.status];
 
@@ -83,6 +100,14 @@ export default async function ProjectDetailPage({
           />
         </div>
       </div>
+
+      {/* Messages */}
+      <section>
+        <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Messages
+        </h2>
+        <MessagesPanel projectId={project.id} messages={messages} />
+      </section>
 
       {/* Files */}
       <section>
