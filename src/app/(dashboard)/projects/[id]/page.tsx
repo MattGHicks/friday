@@ -1,16 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FilesPanel } from "./files-panel";
 import { InvoicesPanel } from "./invoices-panel";
 import { ProjectHeaderActions } from "./project-header-actions";
-import { ActivityPanel } from "./activity-panel";
 import { MessagesPanel, type MessageRecord } from "./messages-panel";
+import { AtAGlance } from "./at-a-glance";
+import { ProjectDetailsSidebar } from "./project-details-sidebar";
 import type { InvoiceRecord } from "./invoices-panel";
-import type { ActivityRecord } from "./activity-panel";
 import type { ProjectStatus } from "@/generated/prisma/client";
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
@@ -19,6 +18,8 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }>
   COMPLETED: { label: "Completed", className: "bg-cream/10 text-cream/70 border-cream/20" },
   ARCHIVED: { label: "Archived", className: "bg-muted/50 text-muted-foreground border-border/50" },
 };
+
+const UNPAID_STATUSES = new Set(["SENT", "VIEWED", "OVERDUE"]);
 
 export default async function ProjectDetailPage({
   params,
@@ -36,7 +37,6 @@ export default async function ProjectDetailPage({
         client: { select: { id: true, name: true } },
         files: { orderBy: { createdAt: "desc" } },
         invoices: { orderBy: { createdAt: "desc" } },
-        activities: { orderBy: { createdAt: "desc" }, take: 50 },
         thread: {
           include: {
             messages: { orderBy: { createdAt: "asc" } },
@@ -66,8 +66,16 @@ export default async function ProjectDetailPage({
 
   const status = STATUS_CONFIG[project.status];
 
+  // At-a-glance stats
+  const unpaidInvoices = project.invoices.filter((inv) =>
+    UNPAID_STATUSES.has(inv.status)
+  );
+  const unpaidCents = unpaidInvoices.reduce((sum, inv) => sum + inv.total, 0);
+  const lastMessageAt =
+    messages.length > 0 ? messages[messages.length - 1].createdAt : null;
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
         <Link
@@ -77,16 +85,17 @@ export default async function ProjectDetailPage({
           <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
           {project.client.name}
         </Link>
-        <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
-          {project.name}
-        </h1>
-        <div className="mt-1 flex items-center gap-2">
-          <Badge variant="outline" className={`text-[11px] ${status.className}`}>
-            {status.label}
-          </Badge>
-          {project.description && (
-            <span className="text-sm text-muted-foreground">{project.description}</span>
-          )}
+        <div className="mt-2 flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight">
+              {project.name}
+            </h1>
+            {project.description && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {project.description}
+              </p>
+            )}
+          </div>
           <ProjectHeaderActions
             project={{
               id: project.id,
@@ -101,73 +110,79 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* Messages */}
-      <section>
-        <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Messages
-        </h2>
-        <MessagesPanel projectId={project.id} messages={messages} />
-      </section>
+      {/* At a glance */}
+      <AtAGlance
+        unpaidCents={unpaidCents}
+        unpaidCount={unpaidInvoices.length}
+        dueDate={project.dueDate}
+        lastMessageAt={lastMessageAt}
+      />
 
-      {/* Files */}
-      <section>
-        <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Files
-        </h2>
-        <FilesPanel
-          projectId={project.id}
-          files={project.files.map((f) => ({
-            id: f.id,
-            name: f.name,
-            url: f.url,
-            size: f.size,
-            mimeType: f.mimeType,
-            isDeliverable: f.isDeliverable,
-            createdAt: f.createdAt,
-          }))}
-        />
-      </section>
+      {/* 2-column layout on lg: main column + sticky sidebar */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        {/* Primary column */}
+        <div className="flex flex-col gap-8">
+          <section>
+            <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Messages
+            </h2>
+            <MessagesPanel projectId={project.id} messages={messages} />
+          </section>
 
-      {/* Invoices */}
-      <section>
-        <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Invoices
-        </h2>
-        <InvoicesPanel
-          projectId={project.id}
-          clientId={project.client.id}
-          invoices={project.invoices.map(
-            (inv): InvoiceRecord => ({
-              id: inv.id,
-              subtotal: inv.subtotal,
-              tax: inv.tax,
-              total: inv.total,
-              status: inv.status,
-              dueDate: inv.dueDate,
-              notes: inv.notes,
-              lineItems: inv.lineItems,
-              createdAt: inv.createdAt,
-            })
-          )}
-        />
-      </section>
+          <section>
+            <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Invoices
+            </h2>
+            <InvoicesPanel
+              projectId={project.id}
+              clientId={project.client.id}
+              invoices={project.invoices.map(
+                (inv): InvoiceRecord => ({
+                  id: inv.id,
+                  subtotal: inv.subtotal,
+                  tax: inv.tax,
+                  total: inv.total,
+                  status: inv.status,
+                  dueDate: inv.dueDate,
+                  notes: inv.notes,
+                  lineItems: inv.lineItems,
+                  createdAt: inv.createdAt,
+                })
+              )}
+            />
+          </section>
 
-      {/* Activity */}
-      <section>
-        <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Activity
-        </h2>
-        <ActivityPanel
-          activities={project.activities.map(
-            (a): ActivityRecord => ({
-              id: a.id,
-              action: a.action,
-              metadata: a.metadata,
-              createdAt: a.createdAt,
-            })
-          )}
+          <section>
+            <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Files
+            </h2>
+            <FilesPanel
+              projectId={project.id}
+              files={project.files.map((f) => ({
+                id: f.id,
+                name: f.name,
+                url: f.url,
+                size: f.size,
+                mimeType: f.mimeType,
+                isDeliverable: f.isDeliverable,
+                createdAt: f.createdAt,
+              }))}
+            />
+          </section>
+        </div>
+
+        {/* Sidebar */}
+        <ProjectDetailsSidebar
+          client={project.client}
+          status={project.status}
+          statusConfig={status}
+          startedAt={project.createdAt}
+          dueDate={project.dueDate}
+          fileCount={project.files.length}
+          invoiceCount={project.invoices.length}
+          messageCount={messages.length}
         />
-      </section>
+      </div>
     </div>
   );
 }
