@@ -66,6 +66,7 @@ export default async function DashboardPage() {
     recentActivity,
     firstFile,
     firstSentInvoice,
+    firstSentQuote,
   ] = await Promise.all([
     // Clients (for quick actions + meeting form)
     prisma.client.findMany({
@@ -158,6 +159,14 @@ export default async function DashboardPage() {
       where: {
         userId: user.id,
         status: { in: ["SENT", "VIEWED", "OVERDUE", "PAID"] },
+      },
+      select: { id: true },
+    }),
+    // Onboarding: any sent quote — sending a quote exposes the portal too
+    prisma.quote.findFirst({
+      where: {
+        userId: user.id,
+        sentAt: { not: null },
       },
       select: { id: true },
     }),
@@ -454,7 +463,11 @@ export default async function DashboardPage() {
         hasProject={totalProjects > 0}
         hasFile={!!firstFile}
         hasInvoice={!!firstSentInvoice}
-        hasSharedPortal={!!user.firstPortalInviteSentAt}
+        hasSharedPortal={
+          !!user.firstPortalInviteSentAt ||
+          !!firstSentInvoice ||
+          !!firstSentQuote
+        }
       />
 
       {/* ── Recent activity ─────────────────────────────────── */}

@@ -43,6 +43,19 @@ export default function SignupPage() {
             </div>
           )}
           <div className="space-y-2">
+            <Label htmlFor="name">Your name</Label>
+            <Input
+              id="name"
+              name="name"
+              placeholder="Jane Designer"
+              autoComplete="name"
+              maxLength={80}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown on quote and invoice emails. You can change it later.
+            </p>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"

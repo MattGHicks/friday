@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createLead, updateLead, type LeadFormState } from "./lead-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -107,7 +108,7 @@ export function LeadFormSheet({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lead-phone">Phone</Label>
-                  <Input
+                  <PhoneInput
                     id="lead-phone"
                     name="phone"
                     defaultValue={lead?.phone ?? ""}
