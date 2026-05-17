@@ -2,13 +2,19 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { format } from "date-fns";
-import { Settings, User, Palette, Upload, X } from "lucide-react";
+import { Settings, User, Palette, Upload, X, Calendar, Copy, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { updateSettings, uploadLogo, removeLogo } from "./actions";
+import {
+  updateSettings,
+  uploadLogo,
+  removeLogo,
+  ensureCalendarFeedToken,
+  rotateCalendarFeedToken,
+} from "./actions";
 
 type UserData = {
   name: string | null;
@@ -17,6 +23,7 @@ type UserData = {
   logoUrl: string | null;
   welcomeMessage: string | null;
   plan: string;
+  calendarFeedToken: string | null;
   createdAt: Date;
 };
 
@@ -28,6 +35,34 @@ export function SettingsClient({ user }: { user: UserData }) {
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isLogoPending, startLogoTransition] = useTransition();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [calendarToken, setCalendarToken] = useState(user.calendarFeedToken);
+  const [calendarBusy, startCalendarTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
+
+  const calendarFeedUrl = calendarToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/api/calendar/ics?token=${calendarToken}`
+    : null;
+
+  function generateCalendarFeed() {
+    startCalendarTransition(async () => {
+      const result = await ensureCalendarFeedToken();
+      if (result.token) setCalendarToken(result.token);
+    });
+  }
+
+  function rotateCalendarFeed() {
+    startCalendarTransition(async () => {
+      const result = await rotateCalendarFeedToken();
+      if (result.token) setCalendarToken(result.token);
+    });
+  }
+
+  async function copyCalendarUrl() {
+    if (!calendarFeedUrl) return;
+    await navigator.clipboard.writeText(calendarFeedUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   function onLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -242,6 +277,72 @@ export function SettingsClient({ user }: { user: UserData }) {
                 Optional. Shown at the top of each client&apos;s portal page.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Calendar feed — read-only ICS export */}
+        <Card className="border-border/40 shadow-none">
+          <CardHeader>
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-cream/60" strokeWidth={1.75} />
+              Calendar feed
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Subscribe to a read-only ICS feed of your meetings from Google Calendar, Apple Calendar, or Outlook.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!calendarToken ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateCalendarFeed}
+                disabled={calendarBusy}
+              >
+                {calendarBusy ? "Generating…" : "Generate feed URL"}
+              </Button>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={calendarFeedUrl ?? ""}
+                    className="font-mono text-xs"
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={copyCalendarUrl}
+                    title="Copy feed URL"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    )}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={rotateCalendarFeed}
+                    disabled={calendarBusy}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <RefreshCw className="mr-1.5 h-3 w-3" strokeWidth={1.75} />
+                    {calendarBusy ? "Rotating…" : "Rotate URL"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground/60">
+                    Anyone with this link can read your meetings. Rotate if it leaks.
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

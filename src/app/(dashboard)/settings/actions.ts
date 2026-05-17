@@ -165,3 +165,48 @@ export async function removeLogo(): Promise<{ error?: string; success?: boolean 
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+function generateFeedToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function ensureCalendarFeedToken(): Promise<{
+  token?: string;
+  error?: string;
+}> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const fresh = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { calendarFeedToken: true },
+  });
+  if (fresh?.calendarFeedToken) return { token: fresh.calendarFeedToken };
+
+  const token = generateFeedToken();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { calendarFeedToken: token },
+  });
+  revalidatePath("/settings");
+  return { token };
+}
+
+export async function rotateCalendarFeedToken(): Promise<{
+  token?: string;
+  error?: string;
+}> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const token = generateFeedToken();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { calendarFeedToken: token },
+  });
+  revalidatePath("/settings");
+  return { token };
+}
+

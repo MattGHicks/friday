@@ -1,3 +1,5 @@
+import { Logo } from "@/components/brand/logo";
+
 type BrandHeaderProps = {
   freelancer?: {
     name: string | null;
@@ -10,9 +12,7 @@ export function PortalBrandHeader({ freelancer }: BrandHeaderProps) {
   if (!freelancer) {
     return (
       <header className="border-b border-border/40 px-6 py-3">
-        <span className="font-heading text-lg font-semibold tracking-tight text-gold">
-          friday
-        </span>
+        <Logo className="h-5 w-auto" />
       </header>
     );
   }
