@@ -53,10 +53,15 @@ export async function getCurrentUser(): Promise<User | null> {
   // Guard against concurrent RSC renders racing to create the same row.
   try {
     return await prisma.$transaction(async (tx) => {
+      const metadataName =
+        typeof supabaseUser.user_metadata?.name === "string"
+          ? (supabaseUser.user_metadata.name as string).trim() || null
+          : null;
       const created = await tx.user.create({
         data: {
           id: supabaseUser.id,
           email: supabaseUser.email!,
+          name: metadataName,
         },
       });
       await tx.pipelineStage.createMany({

@@ -42,7 +42,17 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Public routes — everything else is protected
-  const publicPaths = ["/", "/login", "/signup", "/auth/callback", "/portal"];
+  const publicPaths = [
+    "/",
+    "/login",
+    "/signup",
+    "/auth/callback",
+    "/portal",
+    "/pricing",
+    "/help",
+    "/terms",
+    "/privacy",
+  ];
   const isPublic = publicPaths.includes(path);
   // /portal/quotes/* are public (token-gated), no session required
   const isPublicQuote = path.startsWith("/portal/quotes/");

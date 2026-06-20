@@ -2,13 +2,19 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { format } from "date-fns";
-import { Settings, User, Palette, MessageSquare, Upload, X } from "lucide-react";
+import { Settings, User, Palette, Upload, X, Calendar, Copy, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { updateSettings, uploadLogo, removeLogo } from "./actions";
+import {
+  updateSettings,
+  uploadLogo,
+  removeLogo,
+  ensureCalendarFeedToken,
+  rotateCalendarFeedToken,
+} from "./actions";
 
 type UserData = {
   name: string | null;
@@ -17,6 +23,7 @@ type UserData = {
   logoUrl: string | null;
   welcomeMessage: string | null;
   plan: string;
+  calendarFeedToken: string | null;
   createdAt: Date;
 };
 
@@ -28,6 +35,34 @@ export function SettingsClient({ user }: { user: UserData }) {
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isLogoPending, startLogoTransition] = useTransition();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [calendarToken, setCalendarToken] = useState(user.calendarFeedToken);
+  const [calendarBusy, startCalendarTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
+
+  const calendarFeedUrl = calendarToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/api/calendar/ics?token=${calendarToken}`
+    : null;
+
+  function generateCalendarFeed() {
+    startCalendarTransition(async () => {
+      const result = await ensureCalendarFeedToken();
+      if (result.token) setCalendarToken(result.token);
+    });
+  }
+
+  function rotateCalendarFeed() {
+    startCalendarTransition(async () => {
+      const result = await rotateCalendarFeedToken();
+      if (result.token) setCalendarToken(result.token);
+    });
+  }
+
+  async function copyCalendarUrl() {
+    if (!calendarFeedUrl) return;
+    await navigator.clipboard.writeText(calendarFeedUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   function onLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -54,23 +89,44 @@ export function SettingsClient({ user }: { user: UserData }) {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Settings className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
-          Settings
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, brand, and payment connections. Pipeline
-          stages now live on the{" "}
-          <a
-            href="/pipeline"
-            className="text-fire hover:text-gold transition-colors"
-          >
-            Pipeline
-          </a>{" "}
-          page.
-        </p>
+      {/* Header + account identity strip */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Settings className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+            Settings
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your profile, branding, and payments. Pipeline stages live on
+            the{" "}
+            <a
+              href="/pipeline"
+              className="text-fire hover:text-gold transition-colors"
+            >
+              Pipeline
+            </a>{" "}
+            page.
+          </p>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground sm:pt-2">
+          <div className="flex flex-col">
+            <span className="uppercase tracking-wider text-[10px] text-muted-foreground/70">
+              Plan
+            </span>
+            <span className="font-medium capitalize text-foreground">
+              {user.plan.toLowerCase()}
+            </span>
+          </div>
+          <div className="h-8 w-px bg-border/60" aria-hidden />
+          <div className="flex flex-col">
+            <span className="uppercase tracking-wider text-[10px] text-muted-foreground/70">
+              Member since
+            </span>
+            <span className="font-medium text-foreground">
+              {format(new Date(user.createdAt), "MMM d, yyyy")}
+            </span>
+          </div>
+        </div>
       </div>
 
       <form action={formAction} className="space-y-6">
@@ -224,44 +280,92 @@ export function SettingsClient({ user }: { user: UserData }) {
           </CardContent>
         </Card>
 
-        {/* Status messages + save */}
-        {state.error && (
-          <p className="rounded-md bg-coral/10 px-3 py-2 text-sm text-coral">
-            {state.error}
-          </p>
-        )}
-        {state.success && (
-          <p className="rounded-md bg-sage/10 px-3 py-2 text-sm text-sage">
-            Settings saved.
-          </p>
-        )}
+        {/* Calendar feed — read-only ICS export */}
+        <Card className="border-border/40 shadow-none">
+          <CardHeader>
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-cream/60" strokeWidth={1.75} />
+              Calendar feed
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Subscribe to a read-only ICS feed of your meetings from Google Calendar, Apple Calendar, or Outlook.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!calendarToken ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateCalendarFeed}
+                disabled={calendarBusy}
+              >
+                {calendarBusy ? "Generating…" : "Generate feed URL"}
+              </Button>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={calendarFeedUrl ?? ""}
+                    className="font-mono text-xs"
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={copyCalendarUrl}
+                    title="Copy feed URL"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    )}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={rotateCalendarFeed}
+                    disabled={calendarBusy}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <RefreshCw className="mr-1.5 h-3 w-3" strokeWidth={1.75} />
+                    {calendarBusy ? "Rotating…" : "Rotate URL"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground/60">
+                    Anyone with this link can read your meetings. Rotate if it leaks.
+                  </p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-        <div className="flex items-center gap-3">
+        {/* Save bar — anchored at the bottom of the editable form */}
+        <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-border/40 bg-background/80 px-4 py-3 backdrop-blur sm:-mx-0 sm:rounded-lg sm:border sm:bg-surface-1/40 sm:px-4">
+          <div className="min-w-0 flex-1">
+            {state.error && (
+              <p className="text-sm text-coral">{state.error}</p>
+            )}
+            {state.success && (
+              <p className="text-sm text-sage">Settings saved.</p>
+            )}
+            {!state.error && !state.success && (
+              <p className="text-xs text-muted-foreground">
+                Profile and branding apply to your portal and invoices.
+              </p>
+            )}
+          </div>
           <Button type="submit" disabled={isPending}>
             {isPending ? "Saving…" : "Save changes"}
           </Button>
         </div>
       </form>
-
-      {/* Account info */}
-      <Card className="border-border/40 mt-6">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-            <h2 className="font-heading text-sm font-semibold">Account</h2>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Plan</span>
-            <span className="font-medium capitalize">{user.plan.toLowerCase()}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Member since</span>
-            <span className="font-medium">{format(new Date(user.createdAt), "MMM d, yyyy")}</span>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -42,6 +42,7 @@ export async function GET(
           name: true,
           email: true,
           brandColor: true,
+          logoUrl: true,
         },
       },
     },

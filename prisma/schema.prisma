@@ -21,6 +21,7 @@ model User {
   stripeAccountId String?
   plan            Plan     @default(FREE)
   firstPortalInviteSentAt DateTime?
+  calendarFeedToken String? @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

@@ -20,7 +20,7 @@ import {
   FormPanelFooter,
   FormPanelHeader,
 } from "@/components/ui/form-panel";
-import { Trash2 } from "lucide-react";
+import { CalendarPlus, Trash2 } from "lucide-react";
 import { MeetingType } from "@/generated/prisma/client";
 import { MEETING_TYPE_CONFIG } from "./meeting-type-config";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,22 @@ function toTimeString(dt: Date | string): string {
 
 function combineDateTime(date: string, time: string): string {
   return new Date(`${date}T${time}`).toISOString();
+}
+
+function googleCalendarUrl(meeting: MeetingRecord): string {
+  const fmt = (d: Date | string) => {
+    const date = typeof d === "string" ? new Date(d) : d;
+    return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  };
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: meeting.title,
+    dates: `${fmt(meeting.startTime)}/${fmt(meeting.endTime)}`,
+  });
+  const details = meeting.description ?? meeting.notes ?? "";
+  if (details) params.set("details", details);
+  if (meeting.location) params.set("location", meeting.location);
+  return `https://calendar.google.com/calendar/r/eventedit?${params.toString()}`;
 }
 
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
@@ -380,18 +396,30 @@ export function MeetingFormSheet({
           </div>
           </FormPanelBody>
           <FormPanelFooter>
-            {isEdit && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 sm:mr-auto"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                title="Delete meeting"
-              >
-                <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-              </Button>
+            {isEdit && meeting && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 sm:mr-auto"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  title="Delete meeting"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                </Button>
+                <a
+                  href={googleCalendarUrl(meeting)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Add to Google Calendar"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-cream/60 transition-colors hover:bg-surface-3 hover:text-cream"
+                >
+                  <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Add to Google Calendar
+                </a>
+              </>
             )}
             <Button
               type="button"

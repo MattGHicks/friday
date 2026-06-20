@@ -18,6 +18,7 @@ export default async function SettingsPage() {
       welcomeMessage: true,
       stripeAccountId: true,
       plan: true,
+      calendarFeedToken: true,
       createdAt: true,
     },
   });

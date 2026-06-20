@@ -185,6 +185,7 @@ export default function Home() {
         </div>
       </nav>
 
+      <main>
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
         {/* Deep ambient glow */}
@@ -518,6 +519,7 @@ export default function Home() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* ── Footer ── */}
       <footer className="py-8 px-6 border-t border-white/[0.05]">

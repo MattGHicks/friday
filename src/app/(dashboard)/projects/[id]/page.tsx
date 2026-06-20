@@ -7,8 +7,8 @@ import { FilesPanel } from "./files-panel";
 import { InvoicesPanel } from "./invoices-panel";
 import { ProjectHeaderActions } from "./project-header-actions";
 import { MessagesPanel, type MessageRecord } from "./messages-panel";
-import { AtAGlance } from "./at-a-glance";
 import { ProjectDetailsSidebar } from "./project-details-sidebar";
+import { StatusStrip } from "./status-strip";
 import type { InvoiceRecord } from "./invoices-panel";
 import type { ProjectStatus } from "@/generated/prisma/client";
 
@@ -36,7 +36,10 @@ export default async function ProjectDetailPage({
       include: {
         client: { select: { id: true, name: true } },
         files: { orderBy: { createdAt: "desc" } },
-        invoices: { orderBy: { createdAt: "desc" } },
+        invoices: {
+          orderBy: { createdAt: "desc" },
+          include: { quote: { select: { id: true, total: true, subject: true } } },
+        },
         thread: {
           include: {
             messages: { orderBy: { createdAt: "asc" } },
@@ -66,13 +69,37 @@ export default async function ProjectDetailPage({
 
   const status = STATUS_CONFIG[project.status];
 
-  // At-a-glance stats
+  // Status strip data — unpaid totals, due date, latest message
   const unpaidInvoices = project.invoices.filter((inv) =>
     UNPAID_STATUSES.has(inv.status)
   );
   const unpaidCents = unpaidInvoices.reduce((sum, inv) => sum + inv.total, 0);
   const lastMessageAt =
     messages.length > 0 ? messages[messages.length - 1].createdAt : null;
+
+  // Detect the "accepted quote with outstanding balance" situation. If a deposit
+  // invoice was generated from a quote and no follow-up invoice exists yet,
+  // surface a clear call-to-action to bill the remainder.
+  const depositInvoice = project.invoices.find(
+    (inv) => inv.isDeposit && inv.quoteId
+  );
+  const nonDepositInvoicesFromQuote = depositInvoice
+    ? project.invoices.filter(
+        (inv) =>
+          !inv.isDeposit && inv.quoteId === depositInvoice.quoteId
+      )
+    : [];
+  const quoteTotal = depositInvoice?.quote?.total ?? 0;
+  const depositPaid = depositInvoice?.status === "PAID";
+  const remainingCents = depositInvoice
+    ? Math.max(0, quoteTotal - depositInvoice.total)
+    : 0;
+  const remainingInvoiceExists = nonDepositInvoicesFromQuote.length > 0;
+  const showRemainingBalancePrompt =
+    Boolean(depositInvoice) &&
+    depositPaid &&
+    remainingCents > 0 &&
+    !remainingInvoiceExists;
 
   return (
     <div className="flex flex-col gap-6">
@@ -110,8 +137,8 @@ export default async function ProjectDetailPage({
         </div>
       </div>
 
-      {/* At a glance */}
-      <AtAGlance
+      {/* Slim status strip — one line, no duplicate data */}
+      <StatusStrip
         unpaidCents={unpaidCents}
         unpaidCount={unpaidInvoices.length}
         dueDate={project.dueDate}
@@ -120,42 +147,18 @@ export default async function ProjectDetailPage({
 
       {/* 2-column layout on lg: main column + sticky sidebar */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        {/* Primary column */}
-        <div className="flex flex-col gap-8">
+        {/* Primary column — Files hero → Invoices → Messages */}
+        <div className="flex flex-col gap-10">
           <section>
-            <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Messages
-            </h2>
-            <MessagesPanel projectId={project.id} messages={messages} />
-          </section>
-
-          <section>
-            <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Invoices
-            </h2>
-            <InvoicesPanel
-              projectId={project.id}
-              clientId={project.client.id}
-              invoices={project.invoices.map(
-                (inv): InvoiceRecord => ({
-                  id: inv.id,
-                  subtotal: inv.subtotal,
-                  tax: inv.tax,
-                  total: inv.total,
-                  status: inv.status,
-                  dueDate: inv.dueDate,
-                  notes: inv.notes,
-                  lineItems: inv.lineItems,
-                  createdAt: inv.createdAt,
-                })
-              )}
-            />
-          </section>
-
-          <section>
-            <h2 className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Files
-            </h2>
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Files
+              </h2>
+              <span className="text-xs text-muted-foreground/70">
+                {project.files.length}{" "}
+                {project.files.length === 1 ? "file" : "files"}
+              </span>
+            </div>
             <FilesPanel
               projectId={project.id}
               files={project.files.map((f) => ({
@@ -169,6 +172,54 @@ export default async function ProjectDetailPage({
               }))}
             />
           </section>
+
+          <section>
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Invoices
+              </h2>
+            </div>
+            <InvoicesPanel
+              projectId={project.id}
+              clientId={project.client.id}
+              invoices={project.invoices.map(
+                (inv): InvoiceRecord => ({
+                  id: inv.id,
+                  subtotal: inv.subtotal,
+                  tax: inv.tax,
+                  total: inv.total,
+                  status: inv.status,
+                  dueDate: inv.dueDate,
+                  notes: inv.notes,
+                  lineItems: inv.lineItems,
+                  isDeposit: inv.isDeposit,
+                  createdAt: inv.createdAt,
+                })
+              )}
+              remainingBalancePrompt={
+                showRemainingBalancePrompt && depositInvoice
+                  ? {
+                      quoteId: depositInvoice.quoteId!,
+                      quoteSubject: depositInvoice.quote?.subject ?? project.name,
+                      remainingCents,
+                    }
+                  : null
+              }
+            />
+          </section>
+
+          <section>
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Conversation
+              </h2>
+              <span className="text-xs text-muted-foreground/70">
+                {messages.length}{" "}
+                {messages.length === 1 ? "message" : "messages"}
+              </span>
+            </div>
+            <MessagesPanel projectId={project.id} messages={messages} />
+          </section>
         </div>
 
         {/* Sidebar */}
@@ -178,9 +229,6 @@ export default async function ProjectDetailPage({
           statusConfig={status}
           startedAt={project.createdAt}
           dueDate={project.dueDate}
-          fileCount={project.files.length}
-          invoiceCount={project.invoices.length}
-          messageCount={messages.length}
         />
       </div>
     </div>

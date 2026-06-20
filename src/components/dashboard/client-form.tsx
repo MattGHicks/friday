@@ -10,6 +10,7 @@ import {
 } from "@/app/(dashboard)/clients/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -126,11 +127,10 @@ export function ClientFormSheet({
                       (optional)
                     </span>
                   </Label>
-                  <Input
+                  <PhoneInput
                     id="phone"
                     name="phone"
-                    type="tel"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="(555) 123-4567"
                     defaultValue={client?.phone ?? ""}
                   />
                 </div>

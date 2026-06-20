@@ -12,6 +12,10 @@ const authSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const signupSchema = authSchema.extend({
+  name: z.string().trim().min(1).max(80).optional(),
+});
+
 export type AuthState = {
   error?: string;
 };
@@ -20,9 +24,11 @@ export async function signup(
   _prevState: AuthState,
   formData: FormData
 ): Promise<AuthState> {
-  const parsed = authSchema.safeParse({
+  const nameRaw = (formData.get("name") as string | null)?.trim() ?? "";
+  const parsed = signupSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
+    name: nameRaw || undefined,
   });
 
   if (!parsed.success) {
@@ -33,6 +39,7 @@ export async function signup(
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
+    options: parsed.data.name ? { data: { name: parsed.data.name } } : undefined,
   });
 
   if (error) {
